@@ -1,0 +1,60 @@
+lane :test do
+  upload_galaxystore
+end
+
+CONTENT_ID = "000007498732"
+
+lane :check_staged_rollout do |options|
+  result = galaxy_store_staged_rollout(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: CONTENT_ID,
+    app_status: options[:app_status]
+  )
+end
+
+lane :get_app_list do
+  app_list = galaxy_store_app_list(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"]
+  )
+  UI.message("App list: #{app_list}")
+end
+
+lane :get_app_info do
+  app_info = galaxy_store_app_info(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: CONTENT_ID
+  )
+  UI.message("App info: #{app_info}")
+end
+
+
+lane :upload_metadata do
+  galaxy_store_upload_metadata(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: CONTENT_ID
+  )
+end
+
+lane :submit_app do
+  result = galaxy_store_submit_app(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: CONTENT_ID
+  )
+  UI.message("Submit result: #{result}")
+end
+
+lane :file_upload do |options|
+  result = galaxy_store_upload_apk(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: CONTENT_ID,
+    apk_path: options[:apk_path]
+  )
+  UI.message("Upload result: #{result}")
+  result
+end
