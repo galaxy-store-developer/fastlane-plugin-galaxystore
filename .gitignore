@@ -1,6 +1,7 @@
 *.gem
 Gemfile.lock
 .DS_Store
+fastlane/
 
 ## Documentation cache and generated files:
 /.yardoc/
