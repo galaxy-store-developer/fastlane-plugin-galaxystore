@@ -1,5 +1,6 @@
 require 'fastlane/action'
 require 'fileutils'
+require 'json'
 require 'net/http'
 require 'uri'
 require_relative '../helper/galaxy_store_client'
@@ -18,6 +19,7 @@ module Fastlane
         UI.success("Successfully retrieved app info for content ID #{params[:content_id]}")
 
         write_metadata(app_info, params[:metadata_path])
+        write_json(app_info, params[:metadata_path])
         app_info
       end
 
@@ -63,6 +65,14 @@ module Fastlane
         download_icon(entry['icon'], galaxystore_path) if entry['icon']
 
         UI.success("Metadata written from #{entry['contentStatus']} listing")
+      end
+
+      def self.write_json(app_info, metadata_path)
+        galaxystore_path = File.join(metadata_path, 'galaxystore')
+        FileUtils.mkdir_p(galaxystore_path)
+        json_path = File.join(galaxystore_path, 'app_info.json')
+        File.write(json_path, JSON.pretty_generate(app_info))
+        UI.message("Full API response written to #{json_path}")
       end
 
       def self.download_screenshots(screenshots, lang_dir)

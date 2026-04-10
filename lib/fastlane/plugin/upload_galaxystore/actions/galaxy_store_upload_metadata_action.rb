@@ -14,7 +14,10 @@ module Fastlane
         default_language_code = params[:default_language_code]
         galaxystore_path = File.join(params[:metadata_path], 'galaxystore')
 
-        UI.user_error!("Galaxy Store metadata directory not found at #{galaxystore_path}") unless Dir.exist?(galaxystore_path)
+        unless Dir.exist?(galaxystore_path)
+          UI.user_error!("Galaxy Store metadata directory not found at #{galaxystore_path}. " \
+                         "Run the galaxy_store_app_info action first to download your app's metadata and make local edits.")
+        end
 
         metadata = scan_metadata(galaxystore_path)
 

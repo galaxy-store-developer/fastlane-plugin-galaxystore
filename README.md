@@ -39,8 +39,6 @@ export GALAXY_STORE_ACCESS_TOKEN="your-access-token"
 export GALAXY_STORE_SERVICE_ACCOUNT_ID="your-service-account-id"
 ```
 
-To make these permanent, add them to your `~/.zshrc` (or `~/.bashrc`).
-
 ---
 
 ## Actions
@@ -185,6 +183,87 @@ galaxy_store_submit_app(
 | `content_id` | 12-digit app content ID | Yes |
 
 **Returns:** A hash containing the submission API response.
+
+---
+
+### `galaxy_store_set_staged_rollout`
+
+Enables or disables the staged rollout rate for a given app. Supports a global rollout rate, per-country rates hardcoded in the Fastfile, or a JSON file for complex per-country configurations.
+
+**Enable with a global rate:**
+```ruby
+galaxy_store_set_staged_rollout(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321",
+  action: "ENABLE",
+  app_status: "REGISTRATION",
+  rollout_rate: 25
+)
+```
+
+**Enable with per-country rates hardcoded in the Fastfile:**
+```ruby
+galaxy_store_set_staged_rollout(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321",
+  action: "ENABLE",
+  app_status: "REGISTRATION",
+  rollout_rate: 25,
+  countries: [
+    { countryCode: "USA", rolloutRate: 40 },
+    { countryCode: "KOR", rolloutRate: 45 }
+  ]
+)
+```
+
+**Enable with per-country rates from a JSON file:**
+```ruby
+galaxy_store_set_staged_rollout(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321",
+  action: "ENABLE",
+  app_status: "REGISTRATION",
+  rollout_rate: 25,
+  countries_json_path: "fastlane/rollout_countries.json"
+)
+```
+
+Where `rollout_countries.json` contains:
+```json
+[
+  { "countryCode": "USA", "rolloutRate": 40 },
+  { "countryCode": "KOR", "rolloutRate": 45 }
+]
+```
+
+**Disable staged rollout:**
+```ruby
+galaxy_store_set_staged_rollout(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321",
+  action: "DISABLE",
+  app_status: "REGISTRATION"
+)
+```
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| `access_token` | Galaxy Store API access token | Yes |
+| `service_account_id` | Galaxy Store service account ID | Yes |
+| `content_id` | 12-digit app content ID | Yes |
+| `action` | `ENABLE` or `DISABLE` the staged rollout | Yes |
+| `app_status` | `SALE` (live binaries) or `REGISTRATION` (pending binaries) | Yes |
+| `rollout_rate` | Global rollout percentage (1-100). Required when action is `ENABLE` | No* |
+| `countries` | Array of per-country rollout rates for hardcoding in a Fastfile | No |
+| `countries_json_path` | Path to a JSON file containing per-country rollout rates. Takes precedence over `countries` | No |
+
+*Required when `action` is `ENABLE`.
+
+**Returns:** A hash containing the staged rollout rate API response.
 
 ---
 

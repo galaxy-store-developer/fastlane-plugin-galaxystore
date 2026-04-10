@@ -112,6 +112,30 @@ module Fastlane
         handle_response(response)
       end
 
+      def set_staged_rollout_rate(content_id, function, app_status, rollout_rate: nil, countries: nil)
+        uri = URI("#{BASE_URL}/seller/v2/content/stagedRolloutRate")
+
+        payload = {
+          contentId: content_id,
+          function: function,
+          appStatus: app_status
+        }
+        payload[:rolloutRate] = rollout_rate if rollout_rate
+        payload[:countries] = countries if countries&.any?
+
+        request = Net::HTTP::Put.new(uri)
+        request['Authorization'] = "Bearer #{@access_token}"
+        request['service-account-id'] = @service_account_id
+        request['Content-Type'] = 'application/json'
+        request.body = JSON.generate(payload)
+
+        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+          http.request(request)
+        end
+
+        handle_response(response)
+      end
+
       def get_staged_rollout_binaries(content_id, app_status)
         uri = URI("#{BASE_URL}/seller/v2/content/stagedRolloutBinary")
         uri.query = URI.encode_www_form(contentId: content_id, appStatus: app_status)
