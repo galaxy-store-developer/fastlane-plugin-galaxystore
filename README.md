@@ -186,6 +186,42 @@ galaxy_store_submit_app(
 
 ---
 
+### `galaxy_store_update_staged_rollout_binary`
+
+Adds or removes a binary from the staged rollout group for a given app. Use `galaxy_store_staged_rollout` first to view available binaries and their `binarySeq` values.
+
+```ruby
+# Add a binary to staged rollout
+galaxy_store_update_staged_rollout_binary(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321",
+  function: "ADD",
+  binary_seq: "15"
+)
+
+# Remove a binary from staged rollout
+galaxy_store_update_staged_rollout_binary(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321",
+  function: "REMOVE",
+  binary_seq: "15"
+)
+```
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| `access_token` | Galaxy Store API access token | Yes |
+| `service_account_id` | Galaxy Store service account ID | Yes |
+| `content_id` | 12-digit app content ID | Yes |
+| `function` | `ADD` or `REMOVE` the binary from the staged rollout group | Yes |
+| `binary_seq` | The sequence number of the binary. Use `galaxy_store_staged_rollout` to find this value | Yes |
+
+**Returns:** A hash containing the staged rollout binary API response.
+
+---
+
 ### `galaxy_store_set_staged_rollout`
 
 Enables or disables the staged rollout rate for a given app. Supports a global rollout rate, per-country rates hardcoded in the Fastfile, or a JSON file for complex per-country configurations.

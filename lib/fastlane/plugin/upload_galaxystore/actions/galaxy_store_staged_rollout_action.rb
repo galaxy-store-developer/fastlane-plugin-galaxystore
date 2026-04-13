@@ -27,7 +27,7 @@ module Fastlane
 
         UI.message("Binaries:")
         binary_list.each do |binary|
-          UI.message("  Version: #{binary['versionName']}  |  Rollout status: #{binary['rolloutStatus']}")
+          UI.message("  Seq: #{binary['seq']}  |  Version: #{binary['versionName']}  |  Rollout status: #{binary['rolloutStatus']}")
         end
 
         rollout_enabled = binary_list.any? { |b| b['rolloutStatus']&.upcase == 'ENABLED' }

@@ -112,6 +112,26 @@ module Fastlane
         handle_response(response)
       end
 
+      def update_staged_rollout_binary(content_id, function, binary_seq)
+        uri = URI("#{BASE_URL}/seller/v2/content/stagedRolloutBinary")
+
+        request = Net::HTTP::Put.new(uri)
+        request['Authorization'] = "Bearer #{@access_token}"
+        request['service-account-id'] = @service_account_id
+        request['Content-Type'] = 'application/json'
+        request.body = JSON.generate({
+          contentId: content_id,
+          function: function,
+          binarySeq: binary_seq.to_s
+        })
+
+        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+          http.request(request)
+        end
+
+        handle_response(response)
+      end
+
       def set_staged_rollout_rate(content_id, function, app_status, rollout_rate: nil, countries: nil)
         uri = URI("#{BASE_URL}/seller/v2/content/stagedRolloutRate")
 
