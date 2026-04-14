@@ -43,6 +43,48 @@ export GALAXY_STORE_SERVICE_ACCOUNT_ID="your-service-account-id"
 
 ## Actions
 
+### `galaxy_store_import_from_supply`
+
+Imports app metadata from a [Supply](https://docs.fastlane.tools/actions/supply/) (Google Play) metadata directory into the Galaxy Store format. Use this action to populate `fastlane/metadata/galaxystore/` from an existing `fastlane/metadata/android/` directory, so you can reuse Play Store content for your Galaxy Store listing.
+
+The action:
+- Maps BCP-47 language codes (used by Supply) to Galaxy Store language codes
+- Copies `title.txt`, `short_description.txt`, and `full_description.txt` → `long_description.txt` for each language
+- Copies phone screenshots from each language's `phoneScreenshots/` directory
+- Copies `icon.png` from the default language's directory to the top-level `galaxystore/` folder
+- When multiple regional variants of a language exist (e.g. `es`, `es-ES`, `es-419`), selects the best one automatically with a warning
+
+```ruby
+galaxy_store_import_from_supply(
+  default_language_code: "ENG"
+)
+```
+
+**Resolving language variant conflicts with `language_priority`:**
+
+If your Supply metadata contains multiple variants for the same language (e.g. both `es-ES` and `es-419`), the action picks one automatically. Use `language_priority` to control which variant is used for a specific Galaxy Store language code:
+
+```ruby
+galaxy_store_import_from_supply(
+  language_priority: {
+    "SPA" => "es-419",
+    "POR" => "pt-BR"
+  }
+)
+```
+
+| Parameter | Description | Required | Default |
+|-----------|-------------|----------|---------|
+| `metadata_path` | Path to the metadata folder containing the `android` Supply directory | No | `fastlane/metadata` |
+| `default_language_code` | Galaxy Store language code for the default listing. Determines which language's icon is used | No | `ENG` |
+| `language_priority` | Hash overriding which BCP-47 variant to use per Galaxy Store language code | No | |
+
+**Returns:** A hash mapping Galaxy Store language codes to the BCP-47 directories they were imported from.
+
+> **Note:** Galaxy Store only supports one app icon. The icon is taken from the `default_language_code` language's Supply directory. If that language is not present in the Supply metadata, no icon will be copied.
+
+---
+
 ### `galaxy_store_app_list`
 
 Retrieves the full list of apps registered to your Galaxy Store seller account.
@@ -348,6 +390,25 @@ lane :release do |options|
   )
 end
 ```
+
+### Import metadata from Google Play (Supply)
+
+If you already manage your Play Store listing with Supply, import that content into the Galaxy Store format and push it up:
+
+```ruby
+lane :import_and_upload_metadata do
+  galaxy_store_import_from_supply(
+    default_language_code: "ENG"
+  )
+  galaxy_store_upload_metadata(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: "000007654321"
+  )
+end
+```
+
+---
 
 ### Sync and update store listing metadata
 
