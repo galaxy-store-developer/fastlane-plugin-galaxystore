@@ -55,14 +55,12 @@ module Fastlane
 
       # Default priority order for many-to-one collisions (most preferred first)
       DEFAULT_PRIORITY = {
-        'ENG' => %w[en en-US en-GB en-AU en-CA en-IN],
+        'ENG' => %w[en en-US en-GB en-AU en-CA en-IN en-SG en-ZA],
         'FRA' => %w[fr fr-FR fr-CA fr-BE fr-CH],
-        'DEU' => %w[de de-DE de-AT de-CH],
+        'FAS' => %w[fa fa-IR fa-AE fa-AF],
         'SPA' => %w[es es-ES es-419 es-US es-MX es-AR es-CO es-CL],
         'POR' => %w[pt pt-PT pt-BR],
-        'NOR' => %w[nb no nn],
-        'ZHO' => %w[zh-CN zh-Hans zh-SG zh-MY],
-        '002' => %w[zh-TW zh-Hant zh-HK zh-MO]
+        '002' => %w[zh-TW zh-HK]
       }.freeze
 
       # Maps a single BCP-47 code to a Galaxy Store language code.

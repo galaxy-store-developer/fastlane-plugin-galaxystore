@@ -17,47 +17,15 @@ module Fastlane
       end
 
       def get_app_list
-        uri = URI("#{BASE_URL}/seller/contentList")
-
-        request = Net::HTTP::Get.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
+        get('/seller/contentList')
       end
 
       def get_app_info(content_id)
-        uri = URI("#{BASE_URL}/seller/contentInfo")
-        uri.query = URI.encode_www_form(contentId: content_id)
-
-        request = Net::HTTP::Get.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
+        get('/seller/contentInfo', contentId: content_id)
       end
 
       def create_upload_session_id
-        uri = URI("#{BASE_URL}/seller/createUploadSessionId")
-
-        request = Net::HTTP::Post.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        result = handle_response(response)
-        result['sessionId']
+        post('/seller/createUploadSessionId')['sessionId']
       end
 
       def upload_file(file_path)
@@ -68,73 +36,30 @@ module Fastlane
         boundary = "----RubyFormBoundary#{SecureRandom.hex(16)}"
 
         request = Net::HTTP::Post.new(upload_uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
+        set_auth_headers(request)
         request['Content-Type'] = "multipart/form-data; boundary=#{boundary}"
         request.body = build_multipart_body(boundary, file_path, session_id)
 
-        response = Net::HTTP.start(upload_uri.host, upload_uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
+        execute(request, upload_uri)
       end
 
       def submit_app(content_id)
-        uri = URI("#{BASE_URL}/seller/contentSubmit")
-
-        request = Net::HTTP::Post.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-        request['Content-Type'] = 'application/json'
-        request.body = JSON.generate({ contentId: content_id })
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
+        post('/seller/contentSubmit', { contentId: content_id })
       end
 
       def create_update(content_id)
-        uri = URI("#{BASE_URL}/seller/contentUpdate")
-
-        request = Net::HTTP::Post.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-        request['Content-Type'] = 'application/json'
-        request.body = JSON.generate({ contentId: content_id })
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
+        post('/seller/contentUpdate', { contentId: content_id })
       end
 
       def update_staged_rollout_binary(content_id, function, binary_seq)
-        uri = URI("#{BASE_URL}/seller/v2/content/stagedRolloutBinary")
-
-        request = Net::HTTP::Put.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-        request['Content-Type'] = 'application/json'
-        request.body = JSON.generate({
+        put('/seller/v2/content/stagedRolloutBinary', {
           contentId: content_id,
           function: function,
           binarySeq: binary_seq.to_s
         })
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
       end
 
       def set_staged_rollout_rate(content_id, function, app_status, rollout_rate: nil, countries: nil)
-        uri = URI("#{BASE_URL}/seller/v2/content/stagedRolloutRate")
-
         payload = {
           contentId: content_id,
           function: function,
@@ -142,89 +67,68 @@ module Fastlane
         }
         payload[:rolloutRate] = rollout_rate if rollout_rate
         payload[:countries] = countries if countries&.any?
-
-        request = Net::HTTP::Put.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-        request['Content-Type'] = 'application/json'
-        request.body = JSON.generate(payload)
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
+        put('/seller/v2/content/stagedRolloutRate', payload)
       end
 
       def get_staged_rollout_binaries(content_id, app_status)
-        uri = URI("#{BASE_URL}/seller/v2/content/stagedRolloutBinary")
-        uri.query = URI.encode_www_form(contentId: content_id, appStatus: app_status)
-
-        request = Net::HTTP::Get.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-        request['Content-Type'] = 'application/json'
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
+        get('/seller/v2/content/stagedRolloutBinary', contentId: content_id, appStatus: app_status)
       end
 
       def get_staged_rollout_rate(content_id, app_status)
-        uri = URI("#{BASE_URL}/seller/v2/content/stagedRolloutRate")
-        uri.query = URI.encode_www_form(contentId: content_id, appStatus: app_status)
-
-        request = Net::HTTP::Get.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-        request['Content-Type'] = 'application/json'
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
+        get('/seller/v2/content/stagedRolloutRate', contentId: content_id, appStatus: app_status)
       end
 
       def update_content_metadata(payload)
-        uri = URI("#{BASE_URL}/seller/contentUpdate")
-
-        request = Net::HTTP::Post.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-        request['Content-Type'] = 'application/json'
-        request.body = JSON.generate(payload)
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
+        post('/seller/contentUpdate', payload)
       end
 
       def add_binary(content_id, file_key)
-        uri = URI("#{BASE_URL}/seller/v2/content/binary")
-
-        request = Net::HTTP::Post.new(uri)
-        request['Authorization'] = "Bearer #{@access_token}"
-        request['service-account-id'] = @service_account_id
-        request['Content-Type'] = 'application/json'
-        request.body = JSON.generate({
+        post('/seller/v2/content/binary', {
           contentId: content_id,
           gms: 'N',
           filekey: file_key
         })
-
-        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-          http.request(request)
-        end
-
-        handle_response(response)
       end
 
       private
+
+      def get(path, params = {})
+        uri = URI("#{BASE_URL}#{path}")
+        uri.query = URI.encode_www_form(params) unless params.empty?
+        request = Net::HTTP::Get.new(uri)
+        set_auth_headers(request)
+        execute(request, uri)
+      end
+
+      def post(path, body = nil)
+        uri = URI("#{BASE_URL}#{path}")
+        request = Net::HTTP::Post.new(uri)
+        set_auth_headers(request)
+        if body
+          request['Content-Type'] = 'application/json'
+          request.body = JSON.generate(body)
+        end
+        execute(request, uri)
+      end
+
+      def put(path, body)
+        uri = URI("#{BASE_URL}#{path}")
+        request = Net::HTTP::Put.new(uri)
+        set_auth_headers(request)
+        request['Content-Type'] = 'application/json'
+        request.body = JSON.generate(body)
+        execute(request, uri)
+      end
+
+      def set_auth_headers(request)
+        request['Authorization'] = "Bearer #{@access_token}"
+        request['service-account-id'] = @service_account_id
+      end
+
+      def execute(request, uri)
+        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+        handle_response(response)
+      end
 
       def build_multipart_body(boundary, file_path, session_id)
         file_name = File.basename(file_path)
