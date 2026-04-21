@@ -4,6 +4,27 @@ require 'tmpdir'
 describe Fastlane::Actions::GalaxyStoreUploadApkAction do
   let(:action) { described_class }
 
+  # Helpers for setting/clearing lane context shared values
+  def with_lane_context(values)
+    values.each { |k, v| Fastlane::Actions.lane_context[k] = v }
+    yield
+  ensure
+    values.each_key { |k| Fastlane::Actions.lane_context.delete(k) }
+  end
+
+  let(:base_params) do
+    { access_token: 'token', service_account_id: 'svc_id', content_id: '000007498732' }
+  end
+
+  let(:stub_client) do
+    instance_double(Fastlane::Helper::GalaxyStoreClient).tap do |client|
+      allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).and_return(client)
+      allow(client).to receive(:create_update)
+      allow(client).to receive(:upload_file).and_return({ 'fileKey' => 'key123' })
+      allow(client).to receive(:add_binary).and_return({})
+    end
+  end
+
   describe 'input validation' do
     it 'raises an error when the file does not exist' do
       expect do
@@ -122,6 +143,99 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
         )
 
         expect(result['binarySeq']).to eq('42')
+      end
+    end
+  end
+
+  describe 'lane context fallback' do
+    it 'raises when apk_path is omitted and lane context is empty' do
+      expect do
+        action.run(base_params)
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /No APK\/AAB path provided/)
+    end
+
+    it 'uses GRADLE_AAB_OUTPUT_PATH when apk_path is not set' do
+      Dir.mktmpdir do |tmp|
+        aab_path = File.join(tmp, 'app.aab')
+        File.write(aab_path, 'data')
+        stub_client
+
+        with_lane_context(Fastlane::Actions::SharedValues::GRADLE_AAB_OUTPUT_PATH => aab_path) do
+          expect { action.run(base_params) }.not_to raise_error
+        end
+      end
+    end
+
+    it 'uses GRADLE_ALL_AAB_OUTPUT_PATHS when there is exactly one entry' do
+      Dir.mktmpdir do |tmp|
+        aab_path = File.join(tmp, 'app.aab')
+        File.write(aab_path, 'data')
+        stub_client
+
+        with_lane_context(Fastlane::Actions::SharedValues::GRADLE_ALL_AAB_OUTPUT_PATHS => [aab_path]) do
+          expect { action.run(base_params) }.not_to raise_error
+        end
+      end
+    end
+
+    it 'ignores GRADLE_ALL_AAB_OUTPUT_PATHS when there are multiple entries and falls back to GRADLE_AAB_OUTPUT_PATH' do
+      Dir.mktmpdir do |tmp|
+        aab1 = File.join(tmp, 'app1.aab')
+        aab2 = File.join(tmp, 'app2.aab')
+        single = File.join(tmp, 'single.aab')
+        [aab1, aab2, single].each { |f| File.write(f, 'data') }
+        stub_client
+
+        expect(Fastlane::Helper::GalaxyStoreClient.new('', '')).to receive(:upload_file).with(single).and_return({ 'fileKey' => 'k' })
+
+        with_lane_context(
+          Fastlane::Actions::SharedValues::GRADLE_ALL_AAB_OUTPUT_PATHS => [aab1, aab2],
+          Fastlane::Actions::SharedValues::GRADLE_AAB_OUTPUT_PATH => single
+        ) do
+          action.run(base_params)
+        end
+      end
+    end
+
+    it 'prefers AAB over APK when both are in lane context' do
+      Dir.mktmpdir do |tmp|
+        aab_path = File.join(tmp, 'app.aab')
+        apk_path = File.join(tmp, 'app.apk')
+        [aab_path, apk_path].each { |f| File.write(f, 'data') }
+        stub_client
+
+        expect(Fastlane::Helper::GalaxyStoreClient.new('', '')).to receive(:upload_file).with(aab_path).and_return({ 'fileKey' => 'k' })
+
+        with_lane_context(
+          Fastlane::Actions::SharedValues::GRADLE_AAB_OUTPUT_PATH => aab_path,
+          Fastlane::Actions::SharedValues::GRADLE_APK_OUTPUT_PATH => apk_path
+        ) do
+          action.run(base_params)
+        end
+      end
+    end
+
+    it 'falls back to GRADLE_APK_OUTPUT_PATH when no AAB is in lane context' do
+      Dir.mktmpdir do |tmp|
+        apk_path = File.join(tmp, 'app.apk')
+        File.write(apk_path, 'data')
+        stub_client
+
+        with_lane_context(Fastlane::Actions::SharedValues::GRADLE_APK_OUTPUT_PATH => apk_path) do
+          expect { action.run(base_params) }.not_to raise_error
+        end
+      end
+    end
+
+    it 'uses GRADLE_ALL_APK_OUTPUT_PATHS when there is exactly one entry and no AAB' do
+      Dir.mktmpdir do |tmp|
+        apk_path = File.join(tmp, 'app.apk')
+        File.write(apk_path, 'data')
+        stub_client
+
+        with_lane_context(Fastlane::Actions::SharedValues::GRADLE_ALL_APK_OUTPUT_PATHS => [apk_path]) do
+          expect { action.run(base_params) }.not_to raise_error
+        end
       end
     end
   end

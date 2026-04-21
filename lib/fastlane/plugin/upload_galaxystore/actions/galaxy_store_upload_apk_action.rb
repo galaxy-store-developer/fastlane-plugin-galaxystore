@@ -5,7 +5,8 @@ module Fastlane
   module Actions
     class GalaxyStoreUploadApkAction < Action
       def self.run(params)
-        apk_path = params[:apk_path]
+        apk_path = params[:apk_path] || resolve_from_lane_context
+        UI.user_error!("No APK/AAB path provided and none found in lane context. Set apk_path or run the gradle action first.") if apk_path.nil?
         UI.user_error!("File not found at path: #{apk_path}") unless File.exist?(apk_path)
 
         ext = File.extname(apk_path).downcase
@@ -81,8 +82,8 @@ module Fastlane
           FastlaneCore::ConfigItem.new(
             key: :apk_path,
             env_name: "GALAXY_STORE_APK_PATH",
-            description: "Path to the .apk or .aab file to upload",
-            optional: false,
+            description: "Path to the .apk or .aab file to upload. If omitted, falls back to the gradle lane context (GRADLE_ALL_AAB_OUTPUT_PATHS, GRADLE_AAB_OUTPUT_PATH, GRADLE_ALL_APK_OUTPUT_PATHS, GRADLE_APK_OUTPUT_PATH)",
+            optional: true,
             type: String
           )
         ]
@@ -90,6 +91,21 @@ module Fastlane
 
       def self.is_supported?(platform)
         platform == :android
+      end
+
+      private_class_method def self.resolve_from_lane_context
+        # Prefer AAB — only use GRADLE_ALL_AAB_OUTPUT_PATHS if there is exactly one
+        all_aabs = Actions.lane_context[SharedValues::GRADLE_ALL_AAB_OUTPUT_PATHS] || []
+        return all_aabs.first if all_aabs.size == 1
+
+        aab = Actions.lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]
+        return aab if aab
+
+        # Fall back to APK — same single-entry rule for the multi-path value
+        all_apks = Actions.lane_context[SharedValues::GRADLE_ALL_APK_OUTPUT_PATHS] || []
+        return all_apks.first if all_apks.size == 1
+
+        Actions.lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
       end
     end
   end
