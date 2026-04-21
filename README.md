@@ -200,7 +200,7 @@ galaxy_store_upload_apk(
 | `access_token` | Galaxy Store API access token | Yes |
 | `service_account_id` | Galaxy Store service account ID | Yes |
 | `content_id` | 12-digit app content ID | Yes |
-| `apk_path` | Path to the `.apk` or `.aab` file to upload | Yes |
+| `apk_path` | Path to the `.apk` or `.aab` file to upload. If not provided will check the existing lane for Grade Output Paths  | No |
 
 **Returns:** A hash containing the add binary API response.
 
