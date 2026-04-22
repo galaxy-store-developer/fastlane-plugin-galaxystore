@@ -40,14 +40,13 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'converts full_description.txt to long_description.txt' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: {
-            'en' => {
-              'title.txt' => 'My App',
-              'short_description.txt' => 'Short desc',
-              'full_description.txt' => 'Long description here'
-            }
-          }
-        )
+                         languages: {
+                           'en' => {
+                             'title.txt' => 'My App',
+                             'short_description.txt' => 'Short desc',
+                             'full_description.txt' => 'Long description here'
+                           }
+                         })
 
         action.run(
           metadata_path: tmp,
@@ -64,14 +63,13 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'copies title.txt and short_description.txt unchanged' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: {
-            'fr' => {
-              'title.txt' => 'Mon App',
-              'short_description.txt' => 'Courte description',
-              'full_description.txt' => 'Longue description'
-            }
-          }
-        )
+                         languages: {
+                           'fr' => {
+                             'title.txt' => 'Mon App',
+                             'short_description.txt' => 'Courte description',
+                             'full_description.txt' => 'Longue description'
+                           }
+                         })
 
         action.run(
           metadata_path: tmp,
@@ -90,12 +88,11 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'maps BCP-47 directories to Galaxy Store language codes' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: {
-            'en' => { 'title.txt' => 'English' },
-            'de' => { 'title.txt' => 'Deutsch' },
-            'ko' => { 'title.txt' => '한국어' }
-          }
-        )
+                         languages: {
+                           'en' => { 'title.txt' => 'English' },
+                           'de' => { 'title.txt' => 'Deutsch' },
+                           'ko' => { 'title.txt' => '한국어' }
+                         })
 
         result = action.run(
           metadata_path: tmp,
@@ -113,11 +110,10 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'skips unmapped languages with a warning' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: {
-            'en'  => { 'title.txt' => 'English' },
-            'fil' => { 'title.txt' => 'Filipino' }  # not supported
-          }
-        )
+                         languages: {
+                           'en'  => { 'title.txt' => 'English' },
+                           'fil' => { 'title.txt' => 'Filipino' } # not supported
+                         })
 
         allow(Fastlane::UI).to receive(:important)
         expect(Fastlane::UI).to receive(:important).with(/No Galaxy Store language mapping found for 'fil'/)
@@ -137,11 +133,10 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'resolves many-to-one collisions using language_priority overrides' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: {
-            'es'    => { 'title.txt' => 'Spanish neutral' },
-            'es-419' => { 'title.txt' => 'Spanish latam' }
-          }
-        )
+                         languages: {
+                           'es' => { 'title.txt' => 'Spanish neutral' },
+                           'es-419' => { 'title.txt' => 'Spanish latam' }
+                         })
 
         allow(Fastlane::UI).to receive(:important)
         expect(Fastlane::UI).to receive(:important).with(/Multiple variants found for SPA/)
@@ -163,9 +158,8 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'copies the icon from the default language directory' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: { 'en' => { 'title.txt' => 'App' } },
-          icon_lang: 'en'
-        )
+                         languages: { 'en' => { 'title.txt' => 'App' } },
+                         icon_lang: 'en')
 
         action.run(
           metadata_path: tmp,
@@ -180,9 +174,8 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'warns when the default language has no icon' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: { 'en' => { 'title.txt' => 'App' } }
-          # no icon_lang
-        )
+                         languages: { 'en' => { 'title.txt' => 'App' } })
+        # no icon_lang
 
         allow(Fastlane::UI).to receive(:important)
         expect(Fastlane::UI).to receive(:important).with(/No icon found at/)
@@ -198,8 +191,7 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'warns when the default language code is not present in the metadata' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: { 'de' => { 'title.txt' => 'App' } }
-        )
+                         languages: { 'de' => { 'title.txt' => 'App' } })
 
         allow(Fastlane::UI).to receive(:important)
         expect(Fastlane::UI).to receive(:important).with(/Default language 'ENG' not found/)
@@ -217,14 +209,13 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'copies phoneScreenshots renaming them 1.png, 2.png, ...' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: {
-            'en' => {
-              'title.txt' => 'App',
-              'images/phoneScreenshots/screen_a.png' => 'data_a',
-              'images/phoneScreenshots/screen_b.png' => 'data_b'
-            }
-          }
-        )
+                         languages: {
+                           'en' => {
+                             'title.txt' => 'App',
+                             'images/phoneScreenshots/screen_a.png' => 'data_a',
+                             'images/phoneScreenshots/screen_b.png' => 'data_b'
+                           }
+                         })
 
         action.run(
           metadata_path: tmp,
@@ -243,8 +234,7 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'skips screenshots directory when none are present' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: { 'en' => { 'title.txt' => 'App' } }
-        )
+                         languages: { 'en' => { 'title.txt' => 'App' } })
 
         action.run(
           metadata_path: tmp,
@@ -288,11 +278,10 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
     it 'raises an error when all languages are unmapped' do
       Dir.mktmpdir do |tmp|
         build_supply_dir(tmp,
-          languages: {
-            'fil' => { 'title.txt' => 'Filipino' },
-            'sw'  => { 'title.txt' => 'Swahili' }
-          }
-        )
+                         languages: {
+                           'fil' => { 'title.txt' => 'Filipino' },
+                           'sw'  => { 'title.txt' => 'Swahili' }
+                         })
 
         allow(Fastlane::UI).to receive(:important)
 

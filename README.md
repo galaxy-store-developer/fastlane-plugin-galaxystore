@@ -206,6 +206,57 @@ galaxy_store_upload_apk(
 
 ---
 
+### `galaxy_store_set_publication_type`
+
+Configures how and when an app update goes live after passing review. Must be called before `galaxy_store_submit_app`. Defaults to automatic publication (`'01'`) if `publication_type` is not specified.
+
+| Value | Behaviour |
+|-------|-----------|
+| `'01'` | Publish automatically once the Pre-Review phase completes |
+| `'02'` | Publish on a specific date (requires `start_publication_date`) |
+| `'03'` | Publish manually — the seller must trigger publication via `galaxy_store_publish_app` after all review phases complete |
+
+```ruby
+# Automatic (default)
+galaxy_store_set_publication_type(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321",
+  publication_type: "01"
+)
+
+# Scheduled date
+galaxy_store_set_publication_type(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321",
+  publication_type: "02",
+  start_publication_date: "2026-06-01 09:00:00"
+)
+
+# Manual — publisher controls when the update goes live
+galaxy_store_set_publication_type(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321",
+  publication_type: "03"
+)
+```
+
+| Parameter | Description | Required | Default |
+|-----------|-------------|----------|---------|
+| `access_token` | Galaxy Store API access token | Yes | |
+| `service_account_id` | Galaxy Store service account ID | Yes | |
+| `content_id` | 12-digit app content ID | Yes | |
+| `publication_type` | Publication mode: `'01'` automatic, `'02'` scheduled, `'03'` manual | No | `'01'` |
+| `start_publication_date` | Publication date in `yyyy-MM-dd HH:mm:ss` format. Required when `publication_type` is `'02'` | No* | |
+
+*Required when `publication_type` is `'02'`.
+
+**Returns:** A hash containing the content update API response.
+
+---
+
 ### `galaxy_store_submit_app`
 
 Submits a pending app update for review. Can be used standalone after making changes in the seller portal, or chained after `galaxy_store_upload_apk` or `galaxy_store_upload_metadata`.
@@ -225,6 +276,28 @@ galaxy_store_submit_app(
 | `content_id` | 12-digit app content ID | Yes |
 
 **Returns:** A hash containing the submission API response.
+
+---
+
+### `galaxy_store_publish_app`
+
+Sets the app status to `FOR_SALE`, making it live on the Galaxy Store. Intended for use after `galaxy_store_submit_app` when the app was submitted with the Manual Publication option (`'03'`), allowing the publisher to control exactly when the update goes live.
+
+```ruby
+galaxy_store_publish_app(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  content_id: "000007654321"
+)
+```
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| `access_token` | Galaxy Store API access token | Yes |
+| `service_account_id` | Galaxy Store service account ID | Yes |
+| `content_id` | 12-digit app content ID | Yes |
+
+**Returns:** A hash containing the content status update API response.
 
 ---
 
@@ -384,6 +457,41 @@ lane :release do |options|
     apk_path: options[:apk_path]
   )
   galaxy_store_submit_app(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: "000007654321"
+  )
+end
+```
+
+### Manual publication workflow
+
+Upload and submit with manual publication mode, then publish separately once the review has completed:
+
+```ruby
+lane :release_manual do |options|
+  galaxy_store_upload_apk(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: "000007654321",
+    apk_path: options[:apk_path]
+  )
+  galaxy_store_set_publication_type(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: "000007654321",
+    publication_type: "03"
+  )
+  galaxy_store_submit_app(
+    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+    content_id: "000007654321"
+  )
+end
+
+# Run this lane separately once the review has passed
+lane :publish do
+  galaxy_store_publish_app(
     access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
     service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321"

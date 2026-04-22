@@ -137,7 +137,7 @@ module Fastlane
 
         # Apply built-in priority list
         priority = DEFAULT_PRIORITY[galaxy_code] || []
-        priority.each { |preferred| return preferred if candidates.include?(preferred) }
+        priority.each { |candidate| return candidate if candidates.include?(candidate) }
 
         # Fall back to first available
         candidates.first

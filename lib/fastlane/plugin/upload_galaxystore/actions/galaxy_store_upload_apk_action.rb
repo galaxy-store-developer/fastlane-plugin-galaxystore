@@ -48,7 +48,7 @@ module Fastlane
 
       def self.details
         "Creates an upload session ID, uploads the binary to the Galaxy Store, then registers it " \
-        "against the given content ID. The session creation and file key handoff are handled automatically."
+          "against the given content ID. The session creation and file key handoff are handled automatically."
       end
 
       def self.available_options

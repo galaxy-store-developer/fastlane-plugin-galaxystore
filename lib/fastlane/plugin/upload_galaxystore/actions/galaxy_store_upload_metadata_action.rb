@@ -137,8 +137,8 @@ module Fastlane
 
       def self.details
         "Scans fastlane/metadata/galaxystore for title, short description, long description, icon, and " \
-        "screenshots per language. Uploads any image assets to get file keys, then submits everything " \
-        "via the contentUpdate API."
+          "screenshots per language. Uploads any image assets to get file keys, then submits everything " \
+          "via the contentUpdate API."
       end
 
       def self.available_options

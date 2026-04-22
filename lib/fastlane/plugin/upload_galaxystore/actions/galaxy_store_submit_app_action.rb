@@ -30,7 +30,7 @@ module Fastlane
 
       def self.details
         "Submits a pending app update for the given content ID to the Samsung Galaxy Store for review. " \
-        "Can be used standalone after manual edits in the seller portal, or chained after galaxy_store_upload_apk."
+          "Can be used standalone after manual edits in the seller portal, or chained after galaxy_store_upload_apk."
       end
 
       def self.available_options

@@ -20,12 +20,12 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
       File.write(File.join(lang_dir, 'short_description.txt'), data[:short_description]) if data[:short_description]
       File.write(File.join(lang_dir, 'long_description.txt'), data[:long_description]) if data[:long_description]
 
-      if data[:screenshots]
-        screenshots_dir = File.join(lang_dir, 'screenshots')
-        FileUtils.mkdir_p(screenshots_dir)
-        data[:screenshots].each_with_index do |name, i|
-          File.write(File.join(screenshots_dir, name), "screenshot_#{i}")
-        end
+      next unless data[:screenshots]
+
+      screenshots_dir = File.join(lang_dir, 'screenshots')
+      FileUtils.mkdir_p(screenshots_dir)
+      data[:screenshots].each_with_index do |name, i|
+        File.write(File.join(screenshots_dir, name), "screenshot_#{i}")
       end
     end
 
@@ -36,14 +36,13 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
     it 'reads title, short_description, and long_description from each language directory' do
       Dir.mktmpdir do |tmp|
         build_galaxystore_dir(tmp,
-          languages: {
-            'ENG' => {
-              title: 'My App',
-              short_description: 'A great app',
-              long_description: 'This is a detailed description.'
-            }
-          }
-        )
+                              languages: {
+                                'ENG' => {
+                                  title: 'My App',
+                                  short_description: 'A great app',
+                                  long_description: 'This is a detailed description.'
+                                }
+                              })
 
         result = action.scan_metadata(File.join(tmp, 'galaxystore'))
 
@@ -77,10 +76,9 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
     it 'collects screenshot paths sorted alphabetically' do
       Dir.mktmpdir do |tmp|
         build_galaxystore_dir(tmp,
-          languages: {
-            'ENG' => { screenshots: ['1.png', '2.png', '3.png'] }
-          }
-        )
+                              languages: {
+                                'ENG' => { screenshots: ['1.png', '2.png', '3.png'] }
+                              })
 
         result = action.scan_metadata(File.join(tmp, 'galaxystore'))
 
@@ -93,8 +91,7 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
     it 'handles missing optional files gracefully (no title, no screenshots)' do
       Dir.mktmpdir do |tmp|
         build_galaxystore_dir(tmp,
-          languages: { 'KOR' => {} }
-        )
+                              languages: { 'KOR' => {} })
 
         result = action.scan_metadata(File.join(tmp, 'galaxystore'))
 
@@ -181,9 +178,9 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
       payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, screenshot_keys)
 
       expect(payload[:screenshots]).to eq([
-        { screenshotPath: nil, screenshotKey: 'key1', reuseYn: false },
-        { screenshotPath: nil, screenshotKey: 'key2', reuseYn: false }
-      ])
+                                            { screenshotPath: nil, screenshotKey: 'key1', reuseYn: false },
+                                            { screenshotPath: nil, screenshotKey: 'key2', reuseYn: false }
+                                          ])
     end
 
     it 'attaches screenshot keys for additional languages' do
@@ -193,8 +190,8 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
 
       fra = payload[:addLanguage].find { |l| l[:languagecode] == 'FRA' }
       expect(fra[:screenshots]).to eq([
-        { screenshotPath: nil, screenshotKey: 'fra_key', reuseYn: false }
-      ])
+                                        { screenshotPath: nil, screenshotKey: 'fra_key', reuseYn: false }
+                                      ])
     end
 
     it 'handles a missing default language gracefully (uses empty hash)' do

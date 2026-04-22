@@ -115,10 +115,10 @@ module Fastlane
 
       def self.details
         "Reads metadata from fastlane/metadata/android (created by the Supply action for Google Play), " \
-        "maps BCP-47 language codes to Galaxy Store language codes, and writes the result to " \
-        "fastlane/metadata/galaxystore. When multiple regional variants of a language exist (e.g. es, es-ES, " \
-        "es-419), the most appropriate variant is selected automatically with a warning. Use the " \
-        "language_priority param to override the selection for specific languages."
+          "maps BCP-47 language codes to Galaxy Store language codes, and writes the result to " \
+          "fastlane/metadata/galaxystore. When multiple regional variants of a language exist (e.g. es, es-ES, " \
+          "es-419), the most appropriate variant is selected automatically with a warning. Use the " \
+          "language_priority param to override the selection for specific languages."
       end
 
       def self.available_options

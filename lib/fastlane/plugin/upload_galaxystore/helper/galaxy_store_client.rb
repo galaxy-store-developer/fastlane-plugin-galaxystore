@@ -36,7 +36,7 @@ module Fastlane
         boundary = "----RubyFormBoundary#{SecureRandom.hex(16)}"
 
         request = Net::HTTP::Post.new(upload_uri)
-        set_auth_headers(request)
+        apply_auth_headers(request)
         request['Content-Type'] = "multipart/form-data; boundary=#{boundary}"
         request.body = build_multipart_body(boundary, file_path, session_id)
 
@@ -45,6 +45,10 @@ module Fastlane
 
       def submit_app(content_id)
         post('/seller/contentSubmit', { contentId: content_id })
+      end
+
+      def update_content_status(content_id, status)
+        post('/seller/contentStatusUpdate', { contentId: content_id, contentStatus: status })
       end
 
       def create_update(content_id)
@@ -96,14 +100,14 @@ module Fastlane
         uri = URI("#{BASE_URL}#{path}")
         uri.query = URI.encode_www_form(params) unless params.empty?
         request = Net::HTTP::Get.new(uri)
-        set_auth_headers(request)
+        apply_auth_headers(request)
         execute(request, uri)
       end
 
       def post(path, body = nil)
         uri = URI("#{BASE_URL}#{path}")
         request = Net::HTTP::Post.new(uri)
-        set_auth_headers(request)
+        apply_auth_headers(request)
         if body
           request['Content-Type'] = 'application/json'
           request.body = JSON.generate(body)
@@ -114,13 +118,13 @@ module Fastlane
       def put(path, body)
         uri = URI("#{BASE_URL}#{path}")
         request = Net::HTTP::Put.new(uri)
-        set_auth_headers(request)
+        apply_auth_headers(request)
         request['Content-Type'] = 'application/json'
         request.body = JSON.generate(body)
         execute(request, uri)
       end
 
-      def set_auth_headers(request)
+      def apply_auth_headers(request)
         request['Authorization'] = "Bearer #{@access_token}"
         request['service-account-id'] = @service_account_id
       end

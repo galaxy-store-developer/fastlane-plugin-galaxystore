@@ -114,7 +114,7 @@ module Fastlane
         uri = URI(url)
         Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
           response = http.get(uri.request_uri)
-          if response.is_a?(Net::HTTPRedirection)
+          if response.kind_of?(Net::HTTPRedirection)
             download_file(response['location'], dest_path, redirect_limit - 1)
           else
             File.binwrite(dest_path, response.body)
@@ -144,8 +144,8 @@ module Fastlane
 
       def self.details
         "Uses the Galaxy Store Content Publish API to retrieve detailed information about an app and " \
-        "writes metadata to metadata/galaxystore/<language_code>/. Prefers the UPDATING listing if one " \
-        "exists, otherwise falls back to the FOR_SALE listing."
+          "writes metadata to metadata/galaxystore/<language_code>/. Prefers the UPDATING listing if one " \
+          "exists, otherwise falls back to the FOR_SALE listing."
       end
 
       def self.available_options

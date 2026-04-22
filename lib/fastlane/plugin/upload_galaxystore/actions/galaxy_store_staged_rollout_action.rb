@@ -69,7 +69,7 @@ module Fastlane
 
       def self.details
         "Fetches the list of binaries with staged rollout applied for the given content ID and app status. " \
-        "If any binary has staged rollout enabled, also fetches and displays the current rollout rate."
+          "If any binary has staged rollout enabled, also fetches and displays the current rollout rate."
       end
 
       def self.available_options

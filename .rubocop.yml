@@ -70,6 +70,7 @@ Require/MissingRequireStatement:
   - "**/Rakefile"
   - fastlane/**/*
   - supply/**/*
+  - "lib/fastlane/plugin/**/*.rb"
 Layout/FirstHashElementIndentation:
   Enabled: false
 Layout/HashAlignment:

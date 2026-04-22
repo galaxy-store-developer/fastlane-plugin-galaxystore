@@ -35,7 +35,7 @@ module Fastlane
         )
 
         if action == 'ENABLE'
-          UI.success("Staged rollout enabled at #{rollout_rate}%#{countries ? " (with per-country rates)" : ""}")
+          UI.success("Staged rollout enabled at #{rollout_rate}%#{countries ? ' (with per-country rates)' : ''}")
         else
           UI.success("Staged rollout disabled")
         end
@@ -68,8 +68,8 @@ module Fastlane
 
       def self.details
         "Sets the staged rollout rate for the given content ID. Supports a global rollout rate, " \
-        "per-country rates hardcoded in the Fastfile via the 'countries' param, or a path to a " \
-        "JSON file for complex per-country configurations."
+          "per-country rates hardcoded in the Fastfile via the 'countries' param, or a path to a " \
+          "JSON file for complex per-country configurations."
       end
 
       def self.available_options

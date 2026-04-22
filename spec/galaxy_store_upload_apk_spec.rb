@@ -151,7 +151,7 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
     it 'raises when apk_path is omitted and lane context is empty' do
       expect do
         action.run(base_params)
-      end.to raise_error(FastlaneCore::Interface::FastlaneError, /No APK\/AAB path provided/)
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, %r{No APK/AAB path provided})
     end
 
     it 'uses GRADLE_AAB_OUTPUT_PATH when apk_path is not set' do

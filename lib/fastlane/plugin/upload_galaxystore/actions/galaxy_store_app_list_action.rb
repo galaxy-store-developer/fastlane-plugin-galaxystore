@@ -30,7 +30,7 @@ module Fastlane
 
       def self.details
         "Uses the Galaxy Store Content Publish API to retrieve all apps associated with the " \
-        "authenticated seller account."
+          "authenticated seller account."
       end
 
       def self.available_options

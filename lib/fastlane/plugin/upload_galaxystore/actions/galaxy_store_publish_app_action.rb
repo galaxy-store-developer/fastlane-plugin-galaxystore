@@ -3,25 +3,21 @@ require_relative '../helper/galaxy_store_client'
 
 module Fastlane
   module Actions
-    class GalaxyStoreUpdateStagedRolloutBinaryAction < Action
+    class GalaxyStorePublishAppAction < Action
       def self.run(params)
         client = Helper::GalaxyStoreClient.new(
           params[:service_account_id],
           params[:access_token]
         )
 
-        content_id = params[:content_id]
-        function = params[:function].upcase
-        binary_seq = params[:binary_seq]
-
-        UI.message("#{function == 'ADD' ? 'Adding' : 'Removing'} binary #{binary_seq} #{function == 'ADD' ? 'to' : 'from'} staged rollout for content ID #{content_id}...")
-        result = client.update_staged_rollout_binary(content_id, function, binary_seq)
-        UI.success("Binary #{binary_seq} successfully #{function == 'ADD' ? 'added to' : 'removed from'} staged rollout")
+        UI.message("Setting app status to FOR_SALE for content ID #{params[:content_id]}...")
+        result = client.update_content_status(params[:content_id], 'FOR_SALE')
+        UI.success("App is now FOR_SALE")
         result
       end
 
       def self.description
-        "Adds or removes a binary from the staged rollout group for a Samsung Galaxy Store app"
+        "Sets a Samsung Galaxy Store app's status to FOR_SALE"
       end
 
       def self.authors
@@ -29,12 +25,13 @@ module Fastlane
       end
 
       def self.return_value
-        "Returns a hash containing the staged rollout binary API response"
+        "Returns a hash containing the contentStatusUpdate response from the Galaxy Store API"
       end
 
       def self.details
-        "Updates the staged rollout binary group for the given content ID. Use galaxy_store_staged_rollout " \
-          "to view available binaries and their binarySeq values before calling this action."
+        "Moves the app to the FOR_SALE state via the Galaxy Store Content Publish API. Intended for use " \
+          "after galaxy_store_submit_app when the app was submitted with the Manual Publication option, " \
+          "allowing the publisher to control when the update goes live."
       end
 
       def self.available_options
@@ -64,21 +61,6 @@ module Fastlane
             verify_block: proc do |value|
               UI.user_error!("Content ID must be a 12-digit number, got: '#{value}'") unless value.match?(/^\d{12}$/)
             end
-          ),
-          FastlaneCore::ConfigItem.new(
-            key: :function,
-            description: "Whether to 'ADD' or 'REMOVE' the binary from the staged rollout group",
-            optional: false,
-            type: String,
-            verify_block: proc do |value|
-              UI.user_error!("function must be 'ADD' or 'REMOVE', got: '#{value}'") unless %w[ADD REMOVE].include?(value.upcase)
-            end
-          ),
-          FastlaneCore::ConfigItem.new(
-            key: :binary_seq,
-            description: "The binarySeq of the binary to add or remove. Use galaxy_store_staged_rollout to view available binaries and their sequence numbers",
-            optional: false,
-            type: String
           )
         ]
       end
