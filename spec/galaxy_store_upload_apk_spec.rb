@@ -57,21 +57,9 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
       Dir.mktmpdir do |tmp|
         apk_path = File.join(tmp, 'app.apk')
         File.write(apk_path, 'fake apk content')
+        stub_client
 
-        client = instance_double(Fastlane::Helper::GalaxyStoreClient)
-        allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).and_return(client)
-        allow(client).to receive(:create_update)
-        allow(client).to receive(:upload_file).and_return({ 'fileKey' => 'key123' })
-        allow(client).to receive(:add_binary).and_return({})
-
-        expect do
-          action.run(
-            access_token: 'token',
-            service_account_id: 'svc_id',
-            content_id: '000007498732',
-            apk_path: apk_path
-          )
-        end.not_to raise_error
+        expect { action.run(base_params.merge(apk_path: apk_path)) }.not_to raise_error
       end
     end
 
@@ -79,21 +67,9 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
       Dir.mktmpdir do |tmp|
         aab_path = File.join(tmp, 'app.aab')
         File.write(aab_path, 'fake aab content')
+        stub_client
 
-        client = instance_double(Fastlane::Helper::GalaxyStoreClient)
-        allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).and_return(client)
-        allow(client).to receive(:create_update)
-        allow(client).to receive(:upload_file).and_return({ 'fileKey' => 'key456' })
-        allow(client).to receive(:add_binary).and_return({})
-
-        expect do
-          action.run(
-            access_token: 'token',
-            service_account_id: 'svc_id',
-            content_id: '000007498732',
-            apk_path: aab_path
-          )
-        end.not_to raise_error
+        expect { action.run(base_params.merge(apk_path: aab_path)) }.not_to raise_error
       end
     end
   end

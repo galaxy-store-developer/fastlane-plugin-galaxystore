@@ -1,5 +1,6 @@
 require 'fastlane/action'
 require_relative '../helper/galaxy_store_client'
+require_relative '../helper/shared_options'
 
 module Fastlane
   module Actions
@@ -35,22 +36,8 @@ module Fastlane
 
       def self.available_options
         [
-          FastlaneCore::ConfigItem.new(
-            key: :access_token,
-            env_name: "GALAXY_STORE_ACCESS_TOKEN",
-            description: "Access token for Galaxy Store API authentication",
-            optional: false,
-            sensitive: true,
-            type: String
-          ),
-          FastlaneCore::ConfigItem.new(
-            key: :service_account_id,
-            env_name: "GALAXY_STORE_SERVICE_ACCOUNT_ID",
-            description: "Service account ID for Galaxy Store API authentication",
-            optional: false,
-            sensitive: true,
-            type: String
-          )
+          Helper::SharedOptions.access_token,
+          Helper::SharedOptions.service_account_id
         ]
       end
 

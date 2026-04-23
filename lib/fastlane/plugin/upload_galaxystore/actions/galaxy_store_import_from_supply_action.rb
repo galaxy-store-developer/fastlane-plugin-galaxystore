@@ -1,6 +1,7 @@
 require 'fastlane/action'
 require 'fileutils'
 require_relative '../helper/language_mapper'
+require_relative '../helper/shared_options'
 
 module Fastlane
   module Actions
