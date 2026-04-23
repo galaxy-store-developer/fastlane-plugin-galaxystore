@@ -89,6 +89,8 @@ galaxy_store_import_from_supply(
 
 Retrieves detailed information for a specific app and writes the metadata to local files in `fastlane/metadata/galaxystore/`. Prefers an `UPDATING` listing if one exists, otherwise falls back to the `FOR_SALE` listing.
 
+> **Warning:** Running this action can overwrite the metadata that's stored your local metadata directory if you have made local edits or have imported Play Store metadata from Supply.  
+
 The following files are written for each supported language:
 
 ```
@@ -123,8 +125,6 @@ galaxy_store_app_info(
 | `metadata_path` | Path to write metadata files | No | `fastlane/metadata` |
 
 **Returns:** A hash containing the full app info API response.
-
-> **Note:** This action can overwrite the metadata that's stored your local metadata directory if you have made local edits or have imported metadata from Supply. 
 
 ---
 
