@@ -85,26 +85,6 @@ galaxy_store_import_from_supply(
 
 ---
 
-### `galaxy_store_app_list`
-
-Retrieves the full list of apps registered to your Galaxy Store seller account.
-
-```ruby
-app_list = galaxy_store_app_list(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"]
-)
-```
-
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| `access_token` | Galaxy Store API access token | Yes |
-| `service_account_id` | Galaxy Store service account ID | Yes |
-
-**Returns:** An array of hashes, each containing app information for a registered app.
-
----
-
 ### `galaxy_store_app_info`
 
 Retrieves detailed information for a specific app and writes the metadata to local files in `fastlane/metadata/galaxystore/`. Prefers an `UPDATING` listing if one exists, otherwise falls back to the `FOR_SALE` listing.
@@ -144,6 +124,8 @@ galaxy_store_app_info(
 
 **Returns:** A hash containing the full app info API response.
 
+> **Note:** This action can overwrite the metadata that's stored your local metadata directory if you have made local edits or have imported metadata from Supply. 
+
 ---
 
 ### `galaxy_store_upload_metadata`
@@ -174,6 +156,26 @@ The action scans the `galaxystore/` directory for:
 Only languages and fields that exist on disk are included in the update payload.
 
 **Returns:** A hash containing the content update API response.
+
+---
+
+### `galaxy_store_app_list`
+
+Retrieves the full list of apps registered to your Galaxy Store seller account.
+
+```ruby
+app_list = galaxy_store_app_list(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"]
+)
+```
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| `access_token` | Galaxy Store API access token | Yes |
+| `service_account_id` | Galaxy Store service account ID | Yes |
+
+**Returns:** An array of hashes, each containing app information for a registered app.
 
 ---
 
