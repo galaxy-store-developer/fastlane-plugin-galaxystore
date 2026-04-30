@@ -1,9 +1,9 @@
-require 'digest'
 require 'fastlane/action'
 require 'fileutils'
 require 'json'
 require 'net/http'
 require 'uri'
+require_relative '../helper/checksum_store'
 require_relative '../helper/galaxy_store_client'
 require_relative '../helper/shared_options'
 
@@ -66,7 +66,7 @@ module Fastlane
         end
 
         download_files(downloads)
-        write_checksums(galaxystore_path, downloads)
+        Helper::ChecksumStore.write(galaxystore_path, downloads)
 
         UI.success("Metadata written from #{entry['contentStatus']} listing")
       end
@@ -124,46 +124,34 @@ module Fastlane
 
         uri = URI(url)
 
-        if uri.host != http.address
-          download_standalone(url, dest_path, redirect_limit)
-          return
+        # Redirect may point to a different host; open a fresh connection for it
+        unless uri.host == http.address
+          return download_single(url, dest_path, redirect_limit)
         end
 
         response = http.get(uri.request_uri)
         if response.is_a?(Net::HTTPRedirection)
-          download_standalone(response['location'], dest_path, redirect_limit - 1)
+          download_single(response['location'], dest_path, redirect_limit - 1)
         else
           File.binwrite(dest_path, response.body)
         end
       end
 
-      def self.download_standalone(url, dest_path, redirect_limit = 5)
+      def self.download_single(url, dest_path, redirect_limit = 5)
         UI.user_error!("Too many redirects downloading #{url}") if redirect_limit.zero?
 
         uri = URI(url)
-        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https',
-                        open_timeout: DOWNLOAD_TIMEOUT, read_timeout: DOWNLOAD_TIMEOUT) do |http|
-          response = http.get(uri.request_uri)
-          if response.is_a?(Net::HTTPRedirection)
-            download_standalone(response['location'], dest_path, redirect_limit - 1)
-          else
-            File.binwrite(dest_path, response.body)
-          end
-        end
-      end
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = uri.scheme == 'https'
+        http.open_timeout = DOWNLOAD_TIMEOUT
+        http.read_timeout = DOWNLOAD_TIMEOUT
 
-      def self.write_checksums(galaxystore_path, downloads)
-        manifest = {}
-        downloads.each do |job|
-          next unless File.exist?(job[:dest])
-
-          relative = job[:dest].sub("#{galaxystore_path}/", '')
-          manifest[relative] = {
-            'md5' => Digest::MD5.file(job[:dest]).hexdigest,
-            'remote_url' => job[:url]
-          }
+        response = http.get(uri.request_uri)
+        if response.is_a?(Net::HTTPRedirection)
+          download_single(response['location'], dest_path, redirect_limit - 1)
+        else
+          File.binwrite(dest_path, response.body)
         end
-        File.write(File.join(galaxystore_path, '.checksums.json'), JSON.pretty_generate(manifest))
       end
 
       def self.write_language_files(dir_path, title, short_description, long_description)

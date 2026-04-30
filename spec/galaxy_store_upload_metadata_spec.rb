@@ -224,52 +224,56 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
     end
   end
 
-  describe '.load_checksums' do
-    it 'returns an empty hash when no checksums file exists' do
-      Dir.mktmpdir do |tmp|
-        expect(action.load_checksums(tmp)).to eq({})
+  describe 'Helper::ChecksumStore' do
+    let(:store) { Fastlane::Helper::ChecksumStore }
+
+    describe '.load' do
+      it 'returns an empty hash when no checksums file exists' do
+        Dir.mktmpdir do |tmp|
+          expect(store.load(tmp)).to eq({})
+        end
+      end
+
+      it 'parses the checksums file when present' do
+        Dir.mktmpdir do |tmp|
+          manifest = { 'icon.png' => { 'md5' => 'abc123', 'remote_url' => 'https://cdn.example.com/icon.png' } }
+          File.write(File.join(tmp, '.checksums.json'), manifest.to_json)
+
+          result = store.load(tmp)
+          expect(result['icon.png']['md5']).to eq('abc123')
+        end
       end
     end
 
-    it 'parses the checksums file when present' do
-      Dir.mktmpdir do |tmp|
-        manifest = { 'icon.png' => { 'md5' => 'abc123', 'remote_url' => 'https://cdn.example.com/icon.png' } }
-        File.write(File.join(tmp, '.checksums.json'), manifest.to_json)
+    describe '.file_changed?' do
+      it 'returns true when file is not in the manifest' do
+        Dir.mktmpdir do |tmp|
+          path = File.join(tmp, 'new.png')
+          File.binwrite(path, 'data')
 
-        result = action.load_checksums(tmp)
-        expect(result['icon.png']['md5']).to eq('abc123')
+          expect(store.file_changed?(path, tmp, {})).to be true
+        end
       end
-    end
-  end
 
-  describe '.file_changed?' do
-    it 'returns true when file is not in the manifest' do
-      Dir.mktmpdir do |tmp|
-        path = File.join(tmp, 'new.png')
-        File.binwrite(path, 'data')
+      it 'returns false when file MD5 matches the manifest' do
+        Dir.mktmpdir do |tmp|
+          path = File.join(tmp, 'icon.png')
+          File.binwrite(path, 'pixel_data')
+          md5 = Digest::MD5.file(path).hexdigest
 
-        expect(action.file_changed?(path, tmp, {})).to be true
+          checksums = { 'icon.png' => { 'md5' => md5, 'remote_url' => 'https://cdn.example.com/icon.png' } }
+          expect(store.file_changed?(path, tmp, checksums)).to be false
+        end
       end
-    end
 
-    it 'returns false when file MD5 matches the manifest' do
-      Dir.mktmpdir do |tmp|
-        path = File.join(tmp, 'icon.png')
-        File.binwrite(path, 'pixel_data')
-        md5 = Digest::MD5.file(path).hexdigest
+      it 'returns true when file MD5 differs from the manifest' do
+        Dir.mktmpdir do |tmp|
+          path = File.join(tmp, 'icon.png')
+          File.binwrite(path, 'modified_data')
 
-        checksums = { 'icon.png' => { 'md5' => md5, 'remote_url' => 'https://cdn.example.com/icon.png' } }
-        expect(action.file_changed?(path, tmp, checksums)).to be false
-      end
-    end
-
-    it 'returns true when file MD5 differs from the manifest' do
-      Dir.mktmpdir do |tmp|
-        path = File.join(tmp, 'icon.png')
-        File.binwrite(path, 'modified_data')
-
-        checksums = { 'icon.png' => { 'md5' => 'stale_checksum', 'remote_url' => 'https://cdn.example.com/icon.png' } }
-        expect(action.file_changed?(path, tmp, checksums)).to be true
+          checksums = { 'icon.png' => { 'md5' => 'stale_checksum', 'remote_url' => 'https://cdn.example.com/icon.png' } }
+          expect(store.file_changed?(path, tmp, checksums)).to be true
+        end
       end
     end
   end

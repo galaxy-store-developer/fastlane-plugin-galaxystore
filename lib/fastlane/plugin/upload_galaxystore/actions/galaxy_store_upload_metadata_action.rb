@@ -1,6 +1,6 @@
-require 'digest'
 require 'fastlane/action'
 require 'json'
+require_relative '../helper/checksum_store'
 require_relative '../helper/galaxy_store_client'
 require_relative '../helper/shared_options'
 
@@ -24,7 +24,7 @@ module Fastlane
 
         metadata = scan_metadata(galaxystore_path)
         validate_metadata(metadata)
-        checksums = load_checksums(galaxystore_path)
+        checksums = Helper::ChecksumStore.load(galaxystore_path)
 
         icon_key = upload_icon_if_changed(client, metadata[:icon_path], galaxystore_path, checksums)
 
@@ -128,25 +128,10 @@ module Fastlane
         nil
       end
 
-      def self.load_checksums(galaxystore_path)
-        path = File.join(galaxystore_path, '.checksums.json')
-        return {} unless File.exist?(path)
-
-        JSON.parse(File.read(path))
-      end
-
-      def self.file_changed?(file_path, galaxystore_path, checksums)
-        relative = file_path.sub("#{galaxystore_path}/", '')
-        entry = checksums[relative]
-        return true unless entry
-
-        Digest::MD5.file(file_path).hexdigest != entry['md5']
-      end
-
       def self.upload_icon_if_changed(client, icon_path, galaxystore_path, checksums)
         return nil unless icon_path
 
-        unless file_changed?(icon_path, galaxystore_path, checksums)
+        unless Helper::ChecksumStore.file_changed?(icon_path, galaxystore_path, checksums)
           UI.message("Icon unchanged, skipping upload")
           return nil
         end
@@ -159,13 +144,12 @@ module Fastlane
 
       def self.upload_screenshots_if_changed(client, lang_code, paths, galaxystore_path, checksums)
         paths.map do |path|
-          if file_changed?(path, galaxystore_path, checksums)
+          if Helper::ChecksumStore.file_changed?(path, galaxystore_path, checksums)
             UI.message("Uploading screenshot for #{lang_code}: #{File.basename(path)}")
             result = client.upload_file(path)
             { screenshotPath: nil, screenshotKey: result['fileKey'], reuseYn: false }
           else
-            relative = path.sub("#{galaxystore_path}/", '')
-            remote_url = checksums.dig(relative, 'remote_url')
+            remote_url = Helper::ChecksumStore.remote_url(path, galaxystore_path, checksums)
             UI.message("Screenshot unchanged for #{lang_code}: #{File.basename(path)}, reusing")
             { screenshotPath: remote_url, screenshotKey: nil, reuseYn: true }
           end

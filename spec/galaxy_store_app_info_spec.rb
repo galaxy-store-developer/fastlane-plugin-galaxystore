@@ -171,7 +171,9 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
     end
   end
 
-  describe '.write_checksums' do
+  describe 'Helper::ChecksumStore.write' do
+    let(:store) { Fastlane::Helper::ChecksumStore }
+
     it 'writes a JSON manifest with MD5 and remote URL per downloaded file' do
       Dir.mktmpdir do |tmp|
         File.binwrite(File.join(tmp, 'icon.png'), 'icon_data')
@@ -183,7 +185,7 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
           { url: 'https://cdn.example.com/shots/1.png', dest: File.join(tmp, 'ENG', 'screenshots', '1.png') }
         ]
 
-        action.write_checksums(tmp, downloads)
+        store.write(tmp, downloads)
 
         manifest = JSON.parse(File.read(File.join(tmp, '.checksums.json')))
         expect(manifest.keys).to contain_exactly('icon.png', 'ENG/screenshots/1.png')
@@ -198,7 +200,7 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
           { url: 'https://cdn.example.com/missing.png', dest: File.join(tmp, 'missing.png') }
         ]
 
-        action.write_checksums(tmp, downloads)
+        store.write(tmp, downloads)
 
         manifest = JSON.parse(File.read(File.join(tmp, '.checksums.json')))
         expect(manifest).to be_empty
