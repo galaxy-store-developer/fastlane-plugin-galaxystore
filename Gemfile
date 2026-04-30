@@ -20,6 +20,8 @@ gem 'rubocop-performance'
 gem 'rubocop-require_tools'
 # SimpleCov is a code coverage analysis tool for Ruby.
 gem 'simplecov'
+# Lightweight HTTP server used in specs for download testing.
+gem 'webrick'
 
 gemspec
 

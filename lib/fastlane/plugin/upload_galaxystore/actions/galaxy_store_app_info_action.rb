@@ -9,6 +9,8 @@ require_relative '../helper/shared_options'
 module Fastlane
   module Actions
     class GalaxyStoreAppInfoAction < Action
+      DOWNLOAD_TIMEOUT = 30
+
       def self.run(params)
         client = Helper::GalaxyStoreClient.new(
           params[:service_account_id],
@@ -24,12 +26,8 @@ module Fastlane
         app_info
       end
 
-      DOWNLOAD_TIMEOUT = 30
-
       def self.write_metadata(app_info, metadata_path)
         galaxystore_path = File.join(metadata_path, 'galaxystore')
-        FileUtils.rm_rf(galaxystore_path)
-        FileUtils.mkdir_p(galaxystore_path)
 
         entries = Array(app_info)
         entry = entries.find { |e| e['contentStatus'] == 'UPDATING' } ||
@@ -37,8 +35,12 @@ module Fastlane
 
         if entry.nil?
           UI.important("No UPDATING or FOR_SALE listing found — skipping metadata write")
+          FileUtils.mkdir_p(galaxystore_path)
           return
         end
+
+        FileUtils.rm_rf(galaxystore_path)
+        FileUtils.mkdir_p(galaxystore_path)
 
         UI.message("Writing Galaxy Store metadata from #{entry['contentStatus']} listing to #{galaxystore_path}")
 

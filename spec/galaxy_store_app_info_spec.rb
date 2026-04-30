@@ -171,23 +171,24 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
   end
 
   describe '.download_files' do
-    around do |example|
-      server = WEBrick::HTTPServer.new(Port: 0, Logger: WEBrick::Log.new("/dev/null"), AccessLog: [])
-      @port = server.config[:Port]
+    before(:all) do
+      @server = WEBrick::HTTPServer.new(Port: 0, Logger: WEBrick::Log.new('/dev/null'), AccessLog: [])
+      @port = @server.config[:Port]
 
-      server.mount_proc('/image1.png') { |_req, res| res.body = 'pixel_data_1' }
-      server.mount_proc('/image2.png') { |_req, res| res.body = 'pixel_data_2' }
-      server.mount_proc('/icon.png') { |_req, res| res.body = 'icon_data' }
-      server.mount_proc('/redirect') do |_req, res|
+      @server.mount_proc('/image1.png') { |_req, res| res.body = 'pixel_data_1' }
+      @server.mount_proc('/image2.png') { |_req, res| res.body = 'pixel_data_2' }
+      @server.mount_proc('/icon.png') { |_req, res| res.body = 'icon_data' }
+      @server.mount_proc('/redirect') do |_req, res|
         res.status = 302
         res['Location'] = "http://localhost:#{@port}/image1.png"
       end
 
-      thread = Thread.new { server.start }
-      example.run
-    ensure
-      server.shutdown
-      thread.join
+      @server_thread = Thread.new { @server.start }
+    end
+
+    after(:all) do
+      @server.shutdown
+      @server_thread.join
     end
 
     it 'downloads multiple files from the same host on a single connection' do
