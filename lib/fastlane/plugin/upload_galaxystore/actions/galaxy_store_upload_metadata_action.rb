@@ -23,6 +23,7 @@ module Fastlane
         end
 
         metadata = scan_metadata(galaxystore_path)
+        validate_metadata(metadata)
         checksums = load_checksums(galaxystore_path)
 
         icon_key = upload_icon_if_changed(client, metadata[:icon_path], galaxystore_path, checksums)
@@ -39,7 +40,12 @@ module Fastlane
         payload = build_payload(content_id, default_language_code, metadata, icon_key, screenshot_entries)
 
         UI.message("Updating app metadata for content ID #{content_id}...")
-        result = client.update_content_metadata(payload)
+        begin
+          result = client.update_content_metadata(payload)
+        rescue FastlaneCore::Interface::FastlaneError => e
+          diagnose_api_error(e.message, metadata) if e.message.include?('400')
+          raise
+        end
         UI.success("Metadata updated successfully")
         result
       end
@@ -74,6 +80,52 @@ module Fastlane
         end
 
         metadata
+      end
+
+      SHORT_DESC_MIN_BYTES = 20
+      SHORT_DESC_MAX_BYTES = 240
+
+      def self.validate_metadata(metadata)
+        errors = []
+        metadata[:languages].each do |lang_code, lang_data|
+          next unless lang_data[:short_description]
+
+          byte_len = lang_data[:short_description].bytesize
+          next if byte_len >= SHORT_DESC_MIN_BYTES && byte_len <= SHORT_DESC_MAX_BYTES
+
+          errors << "#{lang_code}: short_description is #{byte_len} bytes (must be #{SHORT_DESC_MIN_BYTES}–#{SHORT_DESC_MAX_BYTES})"
+        end
+
+        return if errors.empty?
+
+        UI.user_error!("Metadata validation failed:\n  #{errors.join("\n  ")}")
+      end
+
+      FIELD_PATTERNS = {
+        'short description' => :short_description,
+        'long description' => :long_description,
+        'title' => :title
+      }.freeze
+
+      def self.diagnose_api_error(error_message, metadata)
+        json_str = error_message[/\{.+\}/m]
+        return unless json_str
+
+        parsed = JSON.parse(json_str)
+        error_msg = parsed.dig('body', 'errorMsg') || parsed['message'] || ''
+
+        field_key = FIELD_PATTERNS.find { |pattern, _| error_msg.downcase.include?(pattern) }&.last
+        return unless field_key
+
+        UI.error("Per-language breakdown for #{field_key}:")
+        metadata[:languages].each do |lang_code, lang_data|
+          value = lang_data[field_key]
+          next unless value
+
+          UI.error("  #{lang_code}: #{value.bytesize} bytes — #{value[0..60].inspect}#{'...' if value.length > 60}")
+        end
+      rescue JSON::ParserError
+        nil
       end
 
       def self.load_checksums(galaxystore_path)

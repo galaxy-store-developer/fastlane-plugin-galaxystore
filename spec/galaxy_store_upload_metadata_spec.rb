@@ -234,7 +234,7 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
     it 'parses the checksums file when present' do
       Dir.mktmpdir do |tmp|
         manifest = { 'icon.png' => { 'md5' => 'abc123', 'remote_url' => 'https://cdn.example.com/icon.png' } }
-        File.write(File.join(tmp, '.checksums.json'), JSON.generate(manifest))
+        File.write(File.join(tmp, '.checksums.json'), manifest.to_json)
 
         result = action.load_checksums(tmp)
         expect(result['icon.png']['md5']).to eq('abc123')
@@ -271,6 +271,101 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
         checksums = { 'icon.png' => { 'md5' => 'stale_checksum', 'remote_url' => 'https://cdn.example.com/icon.png' } }
         expect(action.file_changed?(path, tmp, checksums)).to be true
       end
+    end
+  end
+
+  describe '.validate_metadata' do
+    it 'passes when short_description is within range' do
+      metadata = { languages: { 'ENG' => { short_description: 'A' * 20 } } }
+      expect { action.validate_metadata(metadata) }.not_to raise_error
+    end
+
+    it 'passes when short_description is at the upper bound' do
+      metadata = { languages: { 'ENG' => { short_description: 'A' * 240 } } }
+      expect { action.validate_metadata(metadata) }.not_to raise_error
+    end
+
+    it 'raises when short_description is too short' do
+      metadata = { languages: { 'ENG' => { short_description: 'Short' } } }
+      expect { action.validate_metadata(metadata) }.to raise_error(
+        FastlaneCore::Interface::FastlaneError, /ENG: short_description is 5 bytes/
+      )
+    end
+
+    it 'raises when short_description is too long' do
+      metadata = { languages: { 'ENG' => { short_description: 'A' * 241 } } }
+      expect { action.validate_metadata(metadata) }.to raise_error(
+        FastlaneCore::Interface::FastlaneError, /ENG: short_description is 241 bytes/
+      )
+    end
+
+    it 'reports all failing languages in one error' do
+      metadata = {
+        languages: {
+          'ENG' => { short_description: 'OK description text!!' },
+          'FRA' => { short_description: 'Trop court' },
+          'DEU' => { short_description: 'Zu kurz' }
+        }
+      }
+      expect { action.validate_metadata(metadata) }.to raise_error(
+        FastlaneCore::Interface::FastlaneError, /FRA.*DEU/m
+      )
+    end
+
+    it 'skips languages without a short_description' do
+      metadata = { languages: { 'ENG' => { title: 'My App' } } }
+      expect { action.validate_metadata(metadata) }.not_to raise_error
+    end
+
+    it 'counts multi-byte characters by bytesize' do
+      metadata = { languages: { 'JPN' => { short_description: "あ" * 7 } } }
+      expect { action.validate_metadata(metadata) }.not_to raise_error
+    end
+  end
+
+  describe '.diagnose_api_error' do
+    let(:metadata) do
+      {
+        languages: {
+          'ENG' => { short_description: 'Valid description text!', title: 'My App' },
+          'FRA' => { short_description: 'Court', title: 'Mon App' }
+        }
+      }
+    end
+
+    it 'logs per-language breakdown for short description errors' do
+      error_msg = '[POST /seller/contentUpdate] Request failed with status 400: ' \
+                  '{"body":{"errorMsg":"The length of the short description is invalid. (20 ~ 240 bytes)"}}'
+
+      expect(Fastlane::UI).to receive(:error).with(/Per-language breakdown for short_description/)
+      expect(Fastlane::UI).to receive(:error).with(/ENG: 23 bytes/)
+      expect(Fastlane::UI).to receive(:error).with(/FRA: 5 bytes/)
+
+      action.diagnose_api_error(error_msg, metadata)
+    end
+
+    it 'logs per-language breakdown for title errors' do
+      error_msg = '[POST /seller/contentUpdate] Request failed with status 400: ' \
+                  '{"body":{"errorMsg":"The title is invalid."}}'
+
+      expect(Fastlane::UI).to receive(:error).with(/Per-language breakdown for title/)
+      expect(Fastlane::UI).to receive(:error).with(/ENG:/)
+      expect(Fastlane::UI).to receive(:error).with(/FRA:/)
+
+      action.diagnose_api_error(error_msg, metadata)
+    end
+
+    it 'does nothing when the error does not match a known field' do
+      error_msg = '[POST /seller/contentUpdate] Request failed with status 400: ' \
+                  '{"body":{"errorMsg":"Something unrelated went wrong"}}'
+
+      expect(Fastlane::UI).not_to receive(:error)
+
+      action.diagnose_api_error(error_msg, metadata)
+    end
+
+    it 'handles unparseable JSON gracefully' do
+      expect { action.diagnose_api_error('not json at all', metadata) }.not_to raise_error
     end
   end
 
