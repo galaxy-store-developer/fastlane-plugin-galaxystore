@@ -127,11 +127,14 @@ module Fastlane
       def apply_auth_headers(request)
         request['Authorization'] = "Bearer #{@access_token}"
         request['service-account-id'] = @service_account_id
+        request['X-Client-Source'] = 'fastlane-plugin-upload_galaxystore'
       end
 
       def execute(request, uri)
+        UI.verbose("Galaxy Store API >> #{request.method} #{uri}")
         response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
-        handle_response(response)
+        UI.verbose("Galaxy Store API << #{response.code} #{response.message} (#{response.body&.length || 0} bytes)")
+        handle_response(response, request.method, uri.path)
       end
 
       def build_multipart_body(boundary, file_path, session_id)
@@ -162,20 +165,20 @@ module Fastlane
         end
       end
 
-      def handle_response(response)
+      def handle_response(response, method, path)
         case response.code.to_i
         when 200
           JSON.parse(response.body)
         when 204
           nil
         when 401
-          UI.user_error!("Authentication failed. Check your access token and service account ID.")
+          UI.user_error!("[#{method} #{path}] Authentication failed (401). Check your access token and service account ID.")
         when 403
-          UI.user_error!("Access denied. You do not have permission to access this resource.")
+          UI.user_error!("[#{method} #{path}] Access denied (403). You do not have permission to access this resource.")
         when 404
-          UI.user_error!("App not found. Check your content ID.")
+          UI.user_error!("[#{method} #{path}] Not found (404). Check your content ID.")
         else
-          UI.user_error!("Galaxy Store API request failed with status #{response.code}: #{response.body}")
+          UI.user_error!("[#{method} #{path}] Request failed with status #{response.code}: #{response.body}")
         end
       end
     end
