@@ -1,3 +1,4 @@
+require 'digest'
 require 'fastlane/action'
 require 'fileutils'
 require 'json'
@@ -65,6 +66,7 @@ module Fastlane
         end
 
         download_files(downloads)
+        write_checksums(galaxystore_path, downloads)
 
         UI.success("Metadata written from #{entry['contentStatus']} listing")
       end
@@ -148,6 +150,20 @@ module Fastlane
             File.binwrite(dest_path, response.body)
           end
         end
+      end
+
+      def self.write_checksums(galaxystore_path, downloads)
+        manifest = {}
+        downloads.each do |job|
+          next unless File.exist?(job[:dest])
+
+          relative = job[:dest].sub("#{galaxystore_path}/", '')
+          manifest[relative] = {
+            'md5' => Digest::MD5.file(job[:dest]).hexdigest,
+            'remote_url' => job[:url]
+          }
+        end
+        File.write(File.join(galaxystore_path, '.checksums.json'), JSON.pretty_generate(manifest))
       end
 
       def self.write_language_files(dir_path, title, short_description, long_description)

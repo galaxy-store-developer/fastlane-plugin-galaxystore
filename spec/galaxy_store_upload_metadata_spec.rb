@@ -1,3 +1,4 @@
+require 'digest'
 require 'fastlane/plugin/upload_galaxystore'
 require 'tmpdir'
 require 'fileutils'
@@ -132,6 +133,12 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
       expect(payload[:iconKey]).to eq('icon_key_123')
     end
 
+    it 'omits iconKey when icon_key is nil' do
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, {})
+
+      expect(payload).not_to have_key(:iconKey)
+    end
+
     it 'puts additional languages in addLanguage array' do
       payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, {})
 
@@ -172,26 +179,37 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
       expect(payload).not_to have_key(:longDescription)
     end
 
-    it 'attaches screenshot keys for the default language' do
-      screenshot_keys = { 'ENG' => ['key1', 'key2'] }
+    it 'attaches screenshot entries for the default language' do
+      entries = { 'ENG' => [
+        { screenshotPath: nil, screenshotKey: 'key1', reuseYn: false },
+        { screenshotPath: nil, screenshotKey: 'key2', reuseYn: false }
+      ] }
 
-      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, screenshot_keys)
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, entries)
 
-      expect(payload[:screenshots]).to eq([
-                                            { screenshotPath: nil, screenshotKey: 'key1', reuseYn: false },
-                                            { screenshotPath: nil, screenshotKey: 'key2', reuseYn: false }
-                                          ])
+      expect(payload[:screenshots]).to eq(entries['ENG'])
     end
 
-    it 'attaches screenshot keys for additional languages' do
-      screenshot_keys = { 'FRA' => ['fra_key'] }
+    it 'attaches screenshot entries for additional languages' do
+      entries = { 'FRA' => [
+        { screenshotPath: nil, screenshotKey: 'fra_key', reuseYn: false }
+      ] }
 
-      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, screenshot_keys)
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, entries)
 
       fra = payload[:addLanguage].find { |l| l[:languagecode] == 'FRA' }
-      expect(fra[:screenshots]).to eq([
-                                        { screenshotPath: nil, screenshotKey: 'fra_key', reuseYn: false }
-                                      ])
+      expect(fra[:screenshots]).to eq(entries['FRA'])
+    end
+
+    it 'supports mixed reuse and new screenshot entries' do
+      entries = { 'ENG' => [
+        { screenshotPath: 'https://cdn.example.com/old.png', screenshotKey: nil, reuseYn: true },
+        { screenshotPath: nil, screenshotKey: 'new_key', reuseYn: false }
+      ] }
+
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, entries)
+
+      expect(payload[:screenshots]).to eq(entries['ENG'])
     end
 
     it 'handles a missing default language gracefully (uses empty hash)' do
@@ -203,6 +221,56 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
       # Both ENG and FRA end up in addLanguage
       codes = payload[:addLanguage].map { |l| l[:languagecode] }
       expect(codes).to contain_exactly('ENG', 'FRA')
+    end
+  end
+
+  describe '.load_checksums' do
+    it 'returns an empty hash when no checksums file exists' do
+      Dir.mktmpdir do |tmp|
+        expect(action.load_checksums(tmp)).to eq({})
+      end
+    end
+
+    it 'parses the checksums file when present' do
+      Dir.mktmpdir do |tmp|
+        manifest = { 'icon.png' => { 'md5' => 'abc123', 'remote_url' => 'https://cdn.example.com/icon.png' } }
+        File.write(File.join(tmp, '.checksums.json'), JSON.generate(manifest))
+
+        result = action.load_checksums(tmp)
+        expect(result['icon.png']['md5']).to eq('abc123')
+      end
+    end
+  end
+
+  describe '.file_changed?' do
+    it 'returns true when file is not in the manifest' do
+      Dir.mktmpdir do |tmp|
+        path = File.join(tmp, 'new.png')
+        File.binwrite(path, 'data')
+
+        expect(action.file_changed?(path, tmp, {})).to be true
+      end
+    end
+
+    it 'returns false when file MD5 matches the manifest' do
+      Dir.mktmpdir do |tmp|
+        path = File.join(tmp, 'icon.png')
+        File.binwrite(path, 'pixel_data')
+        md5 = Digest::MD5.file(path).hexdigest
+
+        checksums = { 'icon.png' => { 'md5' => md5, 'remote_url' => 'https://cdn.example.com/icon.png' } }
+        expect(action.file_changed?(path, tmp, checksums)).to be false
+      end
+    end
+
+    it 'returns true when file MD5 differs from the manifest' do
+      Dir.mktmpdir do |tmp|
+        path = File.join(tmp, 'icon.png')
+        File.binwrite(path, 'modified_data')
+
+        checksums = { 'icon.png' => { 'md5' => 'stale_checksum', 'remote_url' => 'https://cdn.example.com/icon.png' } }
+        expect(action.file_changed?(path, tmp, checksums)).to be true
+      end
     end
   end
 

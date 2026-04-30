@@ -1,4 +1,6 @@
+require 'digest'
 require 'fastlane/action'
+require 'json'
 require_relative '../helper/galaxy_store_client'
 require_relative '../helper/shared_options'
 
@@ -21,30 +23,20 @@ module Fastlane
         end
 
         metadata = scan_metadata(galaxystore_path)
+        checksums = load_checksums(galaxystore_path)
 
-        # Upload icon
-        icon_key = nil
-        if metadata[:icon_path]
-          UI.message("Uploading icon...")
-          result = client.upload_file(metadata[:icon_path])
-          icon_key = result['fileKey']
-          UI.message("Icon uploaded, file key: #{icon_key}")
-        end
+        icon_key = upload_icon_if_changed(client, metadata[:icon_path], galaxystore_path, checksums)
 
-        # Upload screenshots per language
-        screenshot_keys = {}
+        screenshot_entries = {}
         metadata[:languages].each do |lang_code, lang_data|
           next unless lang_data[:screenshots]&.any?
 
-          screenshot_keys[lang_code] = []
-          lang_data[:screenshots].each do |path|
-            UI.message("Uploading screenshot for #{lang_code}: #{File.basename(path)}")
-            result = client.upload_file(path)
-            screenshot_keys[lang_code] << result['fileKey']
-          end
+          screenshot_entries[lang_code] = upload_screenshots_if_changed(
+            client, lang_code, lang_data[:screenshots], galaxystore_path, checksums
+          )
         end
 
-        payload = build_payload(content_id, default_language_code, metadata, icon_key, screenshot_keys)
+        payload = build_payload(content_id, default_language_code, metadata, icon_key, screenshot_entries)
 
         UI.message("Updating app metadata for content ID #{content_id}...")
         result = client.update_content_metadata(payload)
@@ -84,23 +76,65 @@ module Fastlane
         metadata
       end
 
-      def self.build_payload(content_id, default_language_code, metadata, icon_key, screenshot_keys)
+      def self.load_checksums(galaxystore_path)
+        path = File.join(galaxystore_path, '.checksums.json')
+        return {} unless File.exist?(path)
+
+        JSON.parse(File.read(path))
+      end
+
+      def self.file_changed?(file_path, galaxystore_path, checksums)
+        relative = file_path.sub("#{galaxystore_path}/", '')
+        entry = checksums[relative]
+        return true unless entry
+
+        Digest::MD5.file(file_path).hexdigest != entry['md5']
+      end
+
+      def self.upload_icon_if_changed(client, icon_path, galaxystore_path, checksums)
+        return nil unless icon_path
+
+        unless file_changed?(icon_path, galaxystore_path, checksums)
+          UI.message("Icon unchanged, skipping upload")
+          return nil
+        end
+
+        UI.message("Uploading icon...")
+        result = client.upload_file(icon_path)
+        UI.message("Icon uploaded, file key: #{result['fileKey']}")
+        result['fileKey']
+      end
+
+      def self.upload_screenshots_if_changed(client, lang_code, paths, galaxystore_path, checksums)
+        paths.map do |path|
+          if file_changed?(path, galaxystore_path, checksums)
+            UI.message("Uploading screenshot for #{lang_code}: #{File.basename(path)}")
+            result = client.upload_file(path)
+            { screenshotPath: nil, screenshotKey: result['fileKey'], reuseYn: false }
+          else
+            relative = path.sub("#{galaxystore_path}/", '')
+            remote_url = checksums.dig(relative, 'remote_url')
+            UI.message("Screenshot unchanged for #{lang_code}: #{File.basename(path)}, reusing")
+            { screenshotPath: remote_url, screenshotKey: nil, reuseYn: true }
+          end
+        end
+      end
+
+      def self.build_payload(content_id, default_language_code, metadata, icon_key, screenshot_entries)
         default_lang = metadata[:languages][default_language_code] || {}
 
         payload = {
           contentId: content_id,
-          defaultLanguageCode: default_language_code,
-          iconKey: icon_key
+          defaultLanguageCode: default_language_code
         }
+        payload[:iconKey] = icon_key if icon_key
 
         payload[:appTitle] = default_lang[:title] if default_lang[:title]
         payload[:shortDescription] = default_lang[:short_description] if default_lang[:short_description]
         payload[:longDescription] = default_lang[:long_description] if default_lang[:long_description]
 
-        if screenshot_keys[default_language_code]&.any?
-          payload[:screenshots] = screenshot_keys[default_language_code].map do |key|
-            { screenshotPath: nil, screenshotKey: key, reuseYn: false }
-          end
+        if screenshot_entries[default_language_code]&.any?
+          payload[:screenshots] = screenshot_entries[default_language_code]
         end
 
         additional_languages = metadata[:languages].reject { |code, _| code == default_language_code }
@@ -111,10 +145,8 @@ module Fastlane
             lang_entry[:shortDescription] = lang_data[:short_description] if lang_data[:short_description]
             lang_entry[:description] = lang_data[:long_description] if lang_data[:long_description]
 
-            if screenshot_keys[lang_code]&.any?
-              lang_entry[:screenshots] = screenshot_keys[lang_code].map do |key|
-                { screenshotPath: nil, screenshotKey: key, reuseYn: false }
-              end
+            if screenshot_entries[lang_code]&.any?
+              lang_entry[:screenshots] = screenshot_entries[lang_code]
             end
 
             lang_entry

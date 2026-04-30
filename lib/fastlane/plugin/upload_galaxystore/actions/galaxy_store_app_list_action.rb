@@ -1,4 +1,6 @@
 require 'fastlane/action'
+require 'fileutils'
+require 'json'
 require_relative '../helper/galaxy_store_client'
 require_relative '../helper/shared_options'
 
@@ -14,6 +16,13 @@ module Fastlane
         UI.message("Retrieving app list from Galaxy Store...")
         result = client.get_app_list
         UI.success("Retrieved #{result.length} app(s)")
+
+        if params[:output_path]
+          FileUtils.mkdir_p(File.dirname(params[:output_path]))
+          File.write(params[:output_path], JSON.pretty_generate(result))
+          UI.message("App list written to #{params[:output_path]}")
+        end
+
         result
       end
 
@@ -37,7 +46,14 @@ module Fastlane
       def self.available_options
         [
           Helper::SharedOptions.access_token,
-          Helper::SharedOptions.service_account_id
+          Helper::SharedOptions.service_account_id,
+          FastlaneCore::ConfigItem.new(
+            key: :output_path,
+            env_name: "GALAXY_STORE_APP_LIST_OUTPUT_PATH",
+            description: "Path to write the app list JSON file. When omitted, the result is only returned",
+            optional: true,
+            type: String
+          )
         ]
       end
 

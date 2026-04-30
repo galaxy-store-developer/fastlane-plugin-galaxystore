@@ -1,3 +1,4 @@
+require 'digest'
 require 'fastlane/plugin/upload_galaxystore'
 require 'tmpdir'
 require 'fileutils'
@@ -166,6 +167,41 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
         action.collect_screenshot_downloads(screenshots, lang_dir, downloads)
 
         expect(downloads.first[:dest]).to end_with('1.png')
+      end
+    end
+  end
+
+  describe '.write_checksums' do
+    it 'writes a JSON manifest with MD5 and remote URL per downloaded file' do
+      Dir.mktmpdir do |tmp|
+        File.binwrite(File.join(tmp, 'icon.png'), 'icon_data')
+        FileUtils.mkdir_p(File.join(tmp, 'ENG', 'screenshots'))
+        File.binwrite(File.join(tmp, 'ENG', 'screenshots', '1.png'), 'shot_data')
+
+        downloads = [
+          { url: 'https://cdn.example.com/icon.png', dest: File.join(tmp, 'icon.png') },
+          { url: 'https://cdn.example.com/shots/1.png', dest: File.join(tmp, 'ENG', 'screenshots', '1.png') }
+        ]
+
+        action.write_checksums(tmp, downloads)
+
+        manifest = JSON.parse(File.read(File.join(tmp, '.checksums.json')))
+        expect(manifest.keys).to contain_exactly('icon.png', 'ENG/screenshots/1.png')
+        expect(manifest['icon.png']['md5']).to eq(Digest::MD5.hexdigest('icon_data'))
+        expect(manifest['icon.png']['remote_url']).to eq('https://cdn.example.com/icon.png')
+      end
+    end
+
+    it 'skips files that were not successfully downloaded' do
+      Dir.mktmpdir do |tmp|
+        downloads = [
+          { url: 'https://cdn.example.com/missing.png', dest: File.join(tmp, 'missing.png') }
+        ]
+
+        action.write_checksums(tmp, downloads)
+
+        manifest = JSON.parse(File.read(File.join(tmp, '.checksums.json')))
+        expect(manifest).to be_empty
       end
     end
   end
