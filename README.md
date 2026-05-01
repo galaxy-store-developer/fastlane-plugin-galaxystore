@@ -87,7 +87,7 @@ galaxy_store_import_from_supply(
 
 ### `galaxy_store_app_info`
 
-Retrieves detailed information for a specific app and writes the metadata to local files in `fastlane/metadata/galaxystore/`. Prefers an `UPDATING` listing if one exists, otherwise falls back to the `FOR_SALE` listing.
+Retrieves detailed information for a specific app and writes the metadata to local files in `fastlane/metadata/galaxystore/`. Prefers a `REGISTERING` listing if one exists, otherwise falls back to the `FOR_SALE` listing.
 
 > **Warning:** Running this action can overwrite the metadata that's stored your local metadata directory if you have made local edits or have imported Play Store metadata from Supply.  
 
@@ -168,12 +168,20 @@ app_list = galaxy_store_app_list(
   access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
   service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"]
 )
+
+# Optionally write the result to a JSON file
+galaxy_store_app_list(
+  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
+  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
+  output_path: "app_list.json"
+)
 ```
 
 | Parameter | Description | Required |
 |-----------|-------------|----------|
 | `access_token` | Galaxy Store API access token | Yes |
 | `service_account_id` | Galaxy Store service account ID | Yes |
+| `output_path` | Path to write the app list as a JSON file. When omitted the result is only returned | No |
 
 **Returns:** An array of hashes, each containing app information for a registered app.
 
