@@ -171,6 +171,8 @@ module Fastlane
           JSON.parse(response.body)
         when 204
           nil
+        when 303
+          poll_long_request(response['Location'], method, path)
         when 401
           UI.user_error!("[#{method} #{path}] Authentication failed (401). Check your access token and service account ID.")
         when 403
@@ -180,6 +182,32 @@ module Fastlane
         else
           UI.user_error!("[#{method} #{path}] Request failed with status #{response.code}: #{response.body}")
         end
+      end
+
+      def poll_long_request(location, method, path, attempts: 30, interval: 10)
+        uri = URI(location.start_with?('http') ? location : "#{BASE_URL}#{location}")
+        UI.message("[#{method} #{path}] Request queued for async processing, polling for completion...")
+
+        attempts.times do |i|
+          UI.message("  Polling attempt #{i + 1}/#{attempts}...")
+          request = Net::HTTP::Get.new(uri)
+          apply_auth_headers(request)
+          response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+
+          code = response.code.to_i
+          if code == 200
+            UI.message("  Async request completed")
+            return JSON.parse(response.body)
+          elsif code == 204
+            return nil
+          elsif code >= 400
+            UI.user_error!("[#{method} #{path}] Async request failed with status #{code}: #{response.body}")
+          else
+            sleep(interval)
+          end
+        end
+
+        UI.user_error!("[#{method} #{path}] Async request timed out after #{attempts * interval}s")
       end
     end
   end
