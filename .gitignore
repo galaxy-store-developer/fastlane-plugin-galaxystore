@@ -2,6 +2,8 @@
 Gemfile.lock
 .DS_Store
 /fastlane/
+app_list.json
+rollout_countries.json
 
 ## Documentation cache and generated files:
 /.yardoc/
