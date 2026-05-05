@@ -80,7 +80,7 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
       end
     end
 
-    it 'skips writing when no REGISTERING or FOR_SALE entry exists' do
+    it 'skips writing when no REGISTERING, UPDATING, or FOR_SALE entry exists' do
       Dir.mktmpdir do |tmp|
         entry = make_entry
         entry['contentStatus'] = 'DRAFT'
@@ -101,6 +101,20 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
         registering['appTitle'] = 'New Title'
 
         action.write_metadata([for_sale, registering], tmp)
+
+        title = File.read(File.join(tmp, 'galaxystore', 'ENG', 'title.txt'))
+        expect(title).to eq('New Title')
+      end
+    end
+
+    it 'prefers UPDATING over FOR_SALE' do
+      Dir.mktmpdir do |tmp|
+        for_sale = make_entry(lang: 'ENG', status: 'FOR_SALE')
+        for_sale['appTitle'] = 'Old Title'
+        updating = make_entry(lang: 'ENG', status: 'UPDATING')
+        updating['appTitle'] = 'New Title'
+
+        action.write_metadata([for_sale, updating], tmp)
 
         title = File.read(File.join(tmp, 'galaxystore', 'ENG', 'title.txt'))
         expect(title).to eq('New Title')
