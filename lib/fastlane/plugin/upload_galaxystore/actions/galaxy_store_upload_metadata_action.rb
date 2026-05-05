@@ -1,6 +1,5 @@
 require 'fastlane/action'
 require 'json'
-require_relative '../helper/checksum_store'
 require_relative '../helper/galaxy_store_client'
 require_relative '../helper/shared_options'
 
@@ -24,17 +23,14 @@ module Fastlane
 
         metadata = scan_metadata(galaxystore_path)
         validate_metadata(metadata)
-        checksums = Helper::ChecksumStore.load(galaxystore_path)
 
-        icon_key = upload_icon_if_changed(client, metadata[:icon_path], galaxystore_path, checksums)
+        icon_key = upload_icon(client, metadata[:icon_path])
 
         screenshot_entries = {}
         metadata[:languages].each do |lang_code, lang_data|
           next unless lang_data[:screenshots]&.any?
 
-          screenshot_entries[lang_code] = upload_screenshots_if_changed(
-            client, lang_code, lang_data[:screenshots], galaxystore_path, checksums
-          )
+          screenshot_entries[lang_code] = upload_screenshots(client, lang_code, lang_data[:screenshots])
         end
 
         payload = build_payload(content_id, default_language_code, metadata, icon_key, screenshot_entries)
@@ -128,13 +124,8 @@ module Fastlane
         nil
       end
 
-      def self.upload_icon_if_changed(client, icon_path, galaxystore_path, checksums)
+      def self.upload_icon(client, icon_path)
         return nil unless icon_path
-
-        unless Helper::ChecksumStore.file_changed?(icon_path, galaxystore_path, checksums)
-          UI.message("Icon unchanged, skipping upload")
-          return nil
-        end
 
         UI.message("Uploading icon...")
         result = client.upload_file(icon_path)
@@ -142,17 +133,11 @@ module Fastlane
         result['fileKey']
       end
 
-      def self.upload_screenshots_if_changed(client, lang_code, paths, galaxystore_path, checksums)
+      def self.upload_screenshots(client, lang_code, paths)
         paths.map do |path|
-          if Helper::ChecksumStore.file_changed?(path, galaxystore_path, checksums)
-            UI.message("Uploading screenshot for #{lang_code}: #{File.basename(path)}")
-            result = client.upload_file(path)
-            { screenshotPath: nil, screenshotKey: result['fileKey'], reuseYn: false }
-          else
-            remote_url = Helper::ChecksumStore.remote_url(path, galaxystore_path, checksums)
-            UI.message("Screenshot unchanged for #{lang_code}: #{File.basename(path)}, reusing")
-            { screenshotPath: remote_url, screenshotKey: nil, reuseYn: true }
-          end
+          UI.message("Uploading screenshot for #{lang_code}: #{File.basename(path)}")
+          result = client.upload_file(path)
+          { screenshotPath: nil, screenshotKey: result['fileKey'], reuseYn: false }
         end
       end
 

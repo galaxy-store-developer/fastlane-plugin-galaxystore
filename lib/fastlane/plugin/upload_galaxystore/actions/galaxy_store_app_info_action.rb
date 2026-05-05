@@ -3,7 +3,6 @@ require 'fileutils'
 require 'json'
 require 'net/http'
 require 'uri'
-require_relative '../helper/checksum_store'
 require_relative '../helper/galaxy_store_client'
 require_relative '../helper/shared_options'
 
@@ -66,7 +65,6 @@ module Fastlane
         end
 
         download_files(downloads)
-        Helper::ChecksumStore.write(galaxystore_path, downloads)
 
         UI.success("Metadata written from #{entry['contentStatus']} listing")
       end
