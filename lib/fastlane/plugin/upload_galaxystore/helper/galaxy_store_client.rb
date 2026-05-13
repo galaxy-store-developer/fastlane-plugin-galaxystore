@@ -86,10 +86,10 @@ module Fastlane
         post('/seller/contentUpdate', payload)
       end
 
-      def add_binary(content_id, file_key)
+      def add_binary(content_id, file_key, gms:)
         post('/seller/v2/content/binary', {
           contentId: content_id,
-          gms: 'N',
+          gms:,
           filekey: file_key
         })
       end

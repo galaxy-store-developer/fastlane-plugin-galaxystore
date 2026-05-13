@@ -13,7 +13,7 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
   end
 
   let(:base_params) do
-    { access_token: 'token', service_account_id: 'svc_id', content_id: '000007498732' }
+    { access_token: 'token', service_account_id: 'svc_id', content_id: '000007498732', gms: 'N' }
   end
 
   let(:stub_client) do
@@ -87,14 +87,9 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
 
         expect(client).to receive(:create_update).with('000007498732').ordered
         expect(client).to receive(:upload_file).with(apk_path).ordered.and_return({ 'fileKey' => 'key123' })
-        expect(client).to receive(:add_binary).with('000007498732', 'key123').ordered.and_return({ 'result' => 'ok' })
+        expect(client).to receive(:add_binary).with('000007498732', 'key123', gms: 'N').ordered.and_return({ 'result' => 'ok' })
 
-        result = action.run(
-          access_token: 'token',
-          service_account_id: 'svc_id',
-          content_id: '000007498732',
-          apk_path:
-        )
+        result = action.run(base_params.merge(apk_path:))
 
         expect(result).to eq({ 'result' => 'ok' })
       end
@@ -111,14 +106,25 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
         allow(client).to receive(:upload_file).and_return({ 'fileKey' => 'fk' })
         allow(client).to receive(:add_binary).and_return({ 'binarySeq' => '42' })
 
-        result = action.run(
-          access_token: 'token',
-          service_account_id: 'svc_id',
-          content_id: '000007498732',
-          apk_path:
-        )
+        result = action.run(base_params.merge(apk_path:))
 
         expect(result['binarySeq']).to eq('42')
+      end
+    end
+
+    it 'forwards an uppercased gms value to add_binary when specified' do
+      Dir.mktmpdir do |tmp|
+        apk_path = File.join(tmp, 'app.apk')
+        File.write(apk_path, 'data')
+
+        client = instance_double(Fastlane::Helper::GalaxyStoreClient)
+        allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).and_return(client)
+        allow(client).to receive(:create_update)
+        allow(client).to receive(:upload_file).and_return({ 'fileKey' => 'fk' })
+
+        expect(client).to receive(:add_binary).with('000007498732', 'fk', gms: 'Y').and_return({})
+
+        action.run(base_params.merge(apk_path:, gms: 'y'))
       end
     end
   end
@@ -241,6 +247,27 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
       expect do
         content_id_item.verify_block.call('000007498732')
       end.not_to raise_error
+    end
+  end
+
+  describe 'ConfigItem validation for gms' do
+    let(:gms_item) { action.available_options.find { |o| o.key == :gms } }
+
+    it "accepts 'Y'" do
+      expect { gms_item.verify_block.call('Y') }.not_to raise_error
+    end
+
+    it "accepts 'N'" do
+      expect { gms_item.verify_block.call('N') }.not_to raise_error
+    end
+
+    it 'accepts lowercase values' do
+      expect { gms_item.verify_block.call('y') }.not_to raise_error
+    end
+
+    it 'rejects other values' do
+      expect { gms_item.verify_block.call('Maybe') }
+        .to raise_error(FastlaneCore::Interface::FastlaneError, /gms must be/)
     end
   end
 end

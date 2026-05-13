@@ -30,7 +30,7 @@ module Fastlane
         UI.message("File uploaded successfully, got file key: #{file_key}")
 
         UI.message("Adding binary to content ID #{content_id}...")
-        result = client.add_binary(content_id, file_key)
+        result = client.add_binary(content_id, file_key, gms: params[:gms]&.upcase)
         UI.success("Binary added successfully")
         result
       end
@@ -63,6 +63,16 @@ module Fastlane
             description: "Path to the .apk or .aab file to upload. If omitted, falls back to the gradle lane context (GRADLE_ALL_AAB_OUTPUT_PATHS, GRADLE_AAB_OUTPUT_PATH, GRADLE_ALL_APK_OUTPUT_PATHS, GRADLE_APK_OUTPUT_PATH)",
             optional: true,
             type: String
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :gms,
+            env_name: "GALAXY_STORE_GMS",
+            description: "Whether the binary uses Google Mobile Services: 'Y' if your build includes the Play Services SDK, 'N' otherwise. This value rarely changes between releases for a given app — hardcode it in your Fastfile",
+            optional: false,
+            type: String,
+            verify_block: proc do |value|
+              UI.user_error!("gms must be 'Y' or 'N', got: '#{value}'") unless %w[Y N].include?(value.upcase)
+            end
           )
         ]
       end

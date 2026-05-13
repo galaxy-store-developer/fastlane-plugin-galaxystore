@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `galaxy_store_upload_apk` — uploads an APK or AAB binary and registers it against the app's content ID. Auto-detects the binary path from gradle lane context (`GRADLE_AAB_OUTPUT_PATH`, `GRADLE_APK_OUTPUT_PATH`, and the `_ALL_` variants) when `apk_path` is not provided.
+- `galaxy_store_upload_apk` — uploads an APK or AAB binary and registers it against the app's content ID. Auto-detects the binary path from gradle lane context (`GRADLE_AAB_OUTPUT_PATH`, `GRADLE_APK_OUTPUT_PATH`, and the `_ALL_` variants) when `apk_path` is not provided. Requires a `gms` (`Y`/`N`) parameter indicating whether the build includes Google Mobile Services.
 - `galaxy_store_upload_metadata` — uploads localized title, short description, long description, icon, and screenshots from `fastlane/metadata/galaxystore/` to the Galaxy Store. Includes pre-flight validation of short description byte length and a per-language diagnostic breakdown when the API returns a 400.
-- `galaxy_store_app_info` — fetches the current app listing from the Galaxy Store and writes it to `fastlane/metadata/galaxystore/<language_code>/`, prefering an in-progress (`REGISTERING` or `UPDATING`) listing over the live `FOR_SALE` one. Downloads icon and screenshots in parallel.
+- `galaxy_store_app_info` — fetches the current app listing from the Galaxy Store and writes it to `fastlane/metadata/galaxystore/<language_code>/`, prefering an in-progress (`REGISTERING`, `UPDATING`, or `READY_FOR_CHANGE`) listing over the live `FOR_SALE` one. Downloads icon and screenshots in parallel.
 - `galaxy_store_app_list` — retrieves the full list of apps registered to the seller account, with an optional `output_path` to write the result as JSON.
 - `galaxy_store_import_from_supply` — imports metadata from a Fastlane Supply (Google Play) directory into the Galaxy Store format, mapping BCP-47 language codes to Galaxy Store three-letter codes. Supports `language_priority` overrides for resolving regional-variant conflicts (e.g. `es-ES` vs `es-419`).
 - `galaxy_store_set_publication_type` — configures whether an update publishes automatically, on a scheduled date, or manually after review.

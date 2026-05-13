@@ -192,7 +192,8 @@ Uploads an APK or AAB file to the Galaxy Store. This action handles the full upl
 ```ruby
 galaxy_store_upload_apk(
   content_id: "000007654321",
-  apk_path: "app/build/outputs/apk/release/app-release.apk"
+  apk_path: "app/build/outputs/apk/release/app-release.apk",
+  gms: "N"
 )
 ```
 
@@ -202,6 +203,7 @@ galaxy_store_upload_apk(
 | `service_account_id` | Galaxy Store service account ID | Yes |
 | `content_id` | 12-digit app content ID | Yes |
 | `apk_path` | Path to the `.apk` or `.aab` file to upload. If not provided will check the existing lane for Grade Output Paths  | No |
+| `gms` | `Y` if your build includes the Google Play Services SDK, `N` otherwise. Rarely changes between releases for a given app — hardcode it in your Fastfile | Yes |
 
 **Returns:** A hash containing the add binary API response.
 
@@ -458,7 +460,8 @@ Upload a new binary and submit it for review in a single lane:
 lane :release do |options|
   galaxy_store_upload_apk(
     content_id: "000007654321",
-    apk_path: options[:apk_path]
+    apk_path: options[:apk_path],
+    gms: "N"
   )
   galaxy_store_submit_app(
     content_id: "000007654321"
@@ -474,7 +477,8 @@ Upload and submit with manual publication mode, then publish separately once the
 lane :release_manual do |options|
   galaxy_store_upload_apk(
     content_id: "000007654321",
-    apk_path: options[:apk_path]
+    apk_path: options[:apk_path],
+    gms: "N"
   )
   galaxy_store_set_publication_type(
     content_id: "000007654321",
