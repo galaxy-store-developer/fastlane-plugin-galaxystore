@@ -89,7 +89,7 @@ galaxy_store_import_from_supply(
 
 ### `galaxy_store_app_info`
 
-Retrieves detailed information for a specific app and writes the metadata to local files in `fastlane/metadata/galaxystore/`. Prefers a `REGISTERING` listing if one exists, otherwise falls back to the `FOR_SALE` listing.
+Retrieves detailed information for a specific app and writes the metadata to local files in `fastlane/metadata/galaxystore/`. Prefers an in-progress listing (`REGISTERING`, `UPDATING`, or `READY_FOR_CHANGE`) if one exists, otherwise falls back to the `FOR_SALE` listing. See [App status lifecycle](#app-status-lifecycle) for what each status means.
 
 > **Warning:** Running this action can overwrite the metadata that's stored your local metadata directory if you have made local edits or have imported Play Store metadata from Supply.  
 
@@ -416,6 +416,35 @@ galaxy_store_staged_rollout(
 | `app_status` | `SALE` (live binaries) or `REGISTRATION` (pending binaries) | Yes |
 
 **Returns:** A hash with `binaries` (array of binary info) and `rollout_rate` (rate data, or `nil` if rollout is not enabled).
+
+---
+
+## App status lifecycle
+
+Each listing returned by `galaxy_store_app_info` has a `contentStatus` field that reflects where it sits in the Galaxy Store publication flow:
+
+| Status | Meaning |
+|--------|---------|
+| `REGISTERING` | A first-time submission that has not yet been approved |
+| `UPDATING` | An update to a previously published app that has not yet been approved |
+| `READY_FOR_CHANGE` | The submission has passed review and is awaiting manual publication. Only appears when `galaxy_store_set_publication_type` was set to `'03'` (manual) |
+| `FOR_SALE` | The listing is live on the Galaxy Store |
+
+A rejected submission returns to `REGISTERING` or `UPDATING` rather than producing a distinct rejected status — check the seller portal for review feedback.
+
+After `galaxy_store_submit_app` with manual publication (`'03'`), poll `galaxy_store_app_info` and call `galaxy_store_publish_app` once the in-progress listing reaches `READY_FOR_CHANGE`:
+
+```ruby
+lane :publish_when_ready do
+  info = galaxy_store_app_info(content_id: "000007654321")
+  ready = info.any? { |entry| entry['contentStatus'] == 'READY_FOR_CHANGE' }
+  if ready
+    galaxy_store_publish_app(content_id: "000007654321")
+  else
+    UI.message("Not yet approved — try again later")
+  end
+end
+```
 
 ---
 
