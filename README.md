@@ -32,12 +32,14 @@ Then run `bundle install`.
 
 ### Authentication
 
-The plugin requires two credentials for all API calls. Set these as environment variables to avoid hardcoding secrets in your Fastfile:
+The plugin requires two credentials for all API calls. Set them as environment variables and the plugin will read them automatically — you don't need to pass `access_token` or `service_account_id` to individual actions:
 
 ```bash
 export GALAXY_STORE_ACCESS_TOKEN="your-access-token"
 export GALAXY_STORE_SERVICE_ACCOUNT_ID="your-service-account-id"
 ```
+
+The examples below assume these environment variables are set. If you need to pass credentials explicitly (e.g. from a CI secret store), every action accepts `access_token:` and `service_account_id:` params that override the environment.
 
 ---
 
@@ -111,8 +113,6 @@ fastlane/metadata/galaxystore/
 
 ```ruby
 galaxy_store_app_info(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321"
 )
 ```
@@ -134,8 +134,6 @@ Reads app metadata from the local `fastlane/metadata/galaxystore/` directory, up
 
 ```ruby
 galaxy_store_upload_metadata(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321"
 )
 ```
@@ -164,15 +162,10 @@ Only languages and fields that exist on disk are included in the update payload.
 Retrieves the full list of apps registered to your Galaxy Store seller account.
 
 ```ruby
-app_list = galaxy_store_app_list(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"]
-)
+app_list = galaxy_store_app_list
 
 # Optionally write the result to a JSON file
 galaxy_store_app_list(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   output_path: "app_list.json"
 )
 ```
@@ -198,8 +191,6 @@ Uploads an APK or AAB file to the Galaxy Store. This action handles the full upl
 
 ```ruby
 galaxy_store_upload_apk(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   apk_path: "app/build/outputs/apk/release/app-release.apk"
 )
@@ -229,16 +220,12 @@ Configures how and when an app update goes live after passing review. Must be ca
 ```ruby
 # Automatic (default)
 galaxy_store_set_publication_type(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   publication_type: "01"
 )
 
 # Scheduled date
 galaxy_store_set_publication_type(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   publication_type: "02",
   start_publication_date: "2026-06-01 09:00:00"
@@ -246,8 +233,6 @@ galaxy_store_set_publication_type(
 
 # Manual — publisher controls when the update goes live
 galaxy_store_set_publication_type(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   publication_type: "03"
 )
@@ -273,8 +258,6 @@ Submits a pending app update for review. Can be used standalone after making cha
 
 ```ruby
 galaxy_store_submit_app(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321"
 )
 ```
@@ -295,8 +278,6 @@ Sets the app status to `FOR_SALE`, making it live on the Galaxy Store. Intended 
 
 ```ruby
 galaxy_store_publish_app(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321"
 )
 ```
@@ -318,8 +299,6 @@ Adds or removes a binary from the staged rollout group for a given app. Use `gal
 ```ruby
 # Add a binary to staged rollout
 galaxy_store_update_staged_rollout_binary(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   function: "ADD",
   binary_seq: "15"
@@ -327,8 +306,6 @@ galaxy_store_update_staged_rollout_binary(
 
 # Remove a binary from staged rollout
 galaxy_store_update_staged_rollout_binary(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   function: "REMOVE",
   binary_seq: "15"
@@ -354,8 +331,6 @@ Enables or disables the staged rollout rate for a given app. Supports a global r
 **Enable with a global rate:**
 ```ruby
 galaxy_store_set_staged_rollout(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   action: "ENABLE",
   app_status: "REGISTRATION",
@@ -366,8 +341,6 @@ galaxy_store_set_staged_rollout(
 **Enable with per-country rates hardcoded in the Fastfile:**
 ```ruby
 galaxy_store_set_staged_rollout(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   action: "ENABLE",
   app_status: "REGISTRATION",
@@ -382,8 +355,6 @@ galaxy_store_set_staged_rollout(
 **Enable with per-country rates from a JSON file:**
 ```ruby
 galaxy_store_set_staged_rollout(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   action: "ENABLE",
   app_status: "REGISTRATION",
@@ -403,8 +374,6 @@ Where `rollout_countries.json` contains:
 **Disable staged rollout:**
 ```ruby
 galaxy_store_set_staged_rollout(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   action: "DISABLE",
   app_status: "REGISTRATION"
@@ -434,8 +403,6 @@ Checks which binaries have staged rollout enabled for a given app, and if any ar
 
 ```ruby
 galaxy_store_staged_rollout(
-  access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-  service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
   content_id: "000007654321",
   app_status: "SALE" # or "REGISTRATION"
 )
@@ -461,14 +428,10 @@ Upload a new binary and submit it for review in a single lane:
 ```ruby
 lane :release do |options|
   galaxy_store_upload_apk(
-    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321",
     apk_path: options[:apk_path]
   )
   galaxy_store_submit_app(
-    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321"
   )
 end
@@ -481,20 +444,14 @@ Upload and submit with manual publication mode, then publish separately once the
 ```ruby
 lane :release_manual do |options|
   galaxy_store_upload_apk(
-    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321",
     apk_path: options[:apk_path]
   )
   galaxy_store_set_publication_type(
-    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321",
     publication_type: "03"
   )
   galaxy_store_submit_app(
-    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321"
   )
 end
@@ -502,8 +459,6 @@ end
 # Run this lane separately once the review has passed
 lane :publish do
   galaxy_store_publish_app(
-    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321"
   )
 end
@@ -519,8 +474,6 @@ lane :import_and_upload_metadata do
     default_language_code: "ENG"
   )
   galaxy_store_upload_metadata(
-    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321"
   )
 end
@@ -536,8 +489,6 @@ Pull current metadata from the Galaxy Store, edit the local files, then push you
 # Pull metadata from Galaxy Store to local files
 lane :fetch_metadata do
   galaxy_store_app_info(
-    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321"
   )
 end
@@ -545,8 +496,6 @@ end
 # Push local metadata changes back to Galaxy Store
 lane :upload_metadata do
   galaxy_store_upload_metadata(
-    access_token: ENV["GALAXY_STORE_ACCESS_TOKEN"],
-    service_account_id: ENV["GALAXY_STORE_SERVICE_ACCOUNT_ID"],
     content_id: "000007654321"
   )
 end
