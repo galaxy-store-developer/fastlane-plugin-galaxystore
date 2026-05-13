@@ -273,7 +273,7 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
 
     it 'logs per-language breakdown for short description errors' do
       error_msg = '[POST /seller/contentUpdate] Request failed with status 400: ' \
-                  '{"body":{"errorMsg":"The length of the short description is invalid. (20 ~ 240 bytes)"}}'
+                  'The length of the short description is invalid. (20 ~ 240 bytes)'
 
       expect(Fastlane::UI).to receive(:error).with(/Per-language breakdown for short_description/)
       expect(Fastlane::UI).to receive(:error).with(/ENG: 23 bytes/)
@@ -283,8 +283,7 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
     end
 
     it 'logs per-language breakdown for title errors' do
-      error_msg = '[POST /seller/contentUpdate] Request failed with status 400: ' \
-                  '{"body":{"errorMsg":"The title is invalid."}}'
+      error_msg = '[POST /seller/contentUpdate] Request failed with status 400 (errorCode 3001): The title is invalid.'
 
       expect(Fastlane::UI).to receive(:error).with(/Per-language breakdown for title/)
       expect(Fastlane::UI).to receive(:error).with(/ENG:/)
@@ -294,16 +293,11 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
     end
 
     it 'does nothing when the error does not match a known field' do
-      error_msg = '[POST /seller/contentUpdate] Request failed with status 400: ' \
-                  '{"body":{"errorMsg":"Something unrelated went wrong"}}'
+      error_msg = '[POST /seller/contentUpdate] Request failed with status 400: Something unrelated went wrong'
 
       expect(Fastlane::UI).not_to receive(:error)
 
       action.diagnose_api_error(error_msg, metadata)
-    end
-
-    it 'handles unparseable JSON gracefully' do
-      expect { action.diagnose_api_error('not json at all', metadata) }.not_to raise_error
     end
   end
 

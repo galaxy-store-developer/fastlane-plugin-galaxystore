@@ -1,5 +1,4 @@
 require 'fastlane/action'
-require 'json'
 require_relative '../helper/galaxy_store_client'
 require_relative '../helper/shared_options'
 
@@ -104,13 +103,7 @@ module Fastlane
       }.freeze
 
       def self.diagnose_api_error(error_message, metadata)
-        json_str = error_message[/\{.+\}/m]
-        return unless json_str
-
-        parsed = JSON.parse(json_str)
-        error_msg = parsed.dig('body', 'errorMsg') || parsed['message'] || ''
-
-        field_key = FIELD_PATTERNS.find { |pattern, _| error_msg.downcase.include?(pattern) }&.last
+        field_key = FIELD_PATTERNS.find { |pattern, _| error_message.downcase.include?(pattern) }&.last
         return unless field_key
 
         UI.error("Per-language breakdown for #{field_key}:")
@@ -120,8 +113,6 @@ module Fastlane
 
           UI.error("  #{lang_code}: #{value.bytesize} bytes — #{value[0..60].inspect}#{'...' if value.length > 60}")
         end
-      rescue JSON::ParserError
-        nil
       end
 
       def self.upload_icon(client, icon_path)

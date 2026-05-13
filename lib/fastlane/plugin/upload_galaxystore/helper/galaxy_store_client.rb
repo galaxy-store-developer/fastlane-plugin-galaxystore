@@ -180,8 +180,24 @@ module Fastlane
         when 404
           UI.user_error!("[#{method} #{path}] Not found (404). Check your content ID.")
         else
-          UI.user_error!("[#{method} #{path}] Request failed with status #{response.code}: #{response.body}")
+          UI.user_error!(format_error(method, path, response.code, response.body))
         end
+      end
+
+      def format_error(method, path, code, body)
+        prefix = "[#{method} #{path}] Request failed with status #{code}"
+
+        parsed = begin
+          JSON.parse(body.to_s)
+        rescue JSON::ParserError
+          nil
+        end
+        error_msg = parsed&.dig('body', 'errorMsg') || parsed&.dig('errorMsg') || parsed&.dig('message')
+        error_code = parsed&.dig('body', 'errorCode') || parsed&.dig('errorCode') || parsed&.dig('resultCode')
+
+        return "#{prefix}: #{body}" unless error_msg
+
+        error_code ? "#{prefix} (errorCode #{error_code}): #{error_msg}" : "#{prefix}: #{error_msg}"
       end
 
       def poll_long_request(location, method, path, attempts: 30, interval: 10)
@@ -201,7 +217,7 @@ module Fastlane
           elsif code == 204
             return nil
           elsif code >= 400
-            UI.user_error!("[#{method} #{path}] Async request failed with status #{code}: #{response.body}")
+            UI.user_error!(format_error(method, "#{path} (async)", code, response.body))
           else
             sleep(interval)
           end

@@ -21,4 +21,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `galaxy_store_set_staged_rollout` — enables or disables staged rollout. Supports a global rollout rate, per-country rates declared inline, or per-country rates loaded from a JSON file.
 - `galaxy_store_update_staged_rollout_binary` — adds or removes a binary from the staged rollout group by `binarySeq`.
 - Async response handling — the API client transparently polls `303 See Other` responses to completion, surfacing only the final result to callers.
+- Structured error reporting — when the Galaxy Store API returns a non-success response, the client parses `errorCode` and `errorMsg` from the response body and surfaces them in the raised error rather than dumping the raw JSON.
 - Authentication via the `GALAXY_STORE_ACCESS_TOKEN` and `GALAXY_STORE_SERVICE_ACCOUNT_ID` environment variables; per-action overrides supported.
