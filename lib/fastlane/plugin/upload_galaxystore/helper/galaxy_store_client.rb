@@ -192,8 +192,15 @@ module Fastlane
         rescue JSON::ParserError
           nil
         end
-        error_msg = parsed&.dig('body', 'errorMsg') || parsed&.dig('errorMsg') || parsed&.dig('message')
-        error_code = parsed&.dig('body', 'errorCode') || parsed&.dig('errorCode') || parsed&.dig('resultCode')
+        error_msg = parsed&.dig('body', 'errorMsg') ||
+                    parsed&.dig('body', 'resultMessage') ||
+                    parsed&.dig('errorMsg') ||
+                    parsed&.dig('resultMessage') ||
+                    parsed&.dig('message')
+        error_code = parsed&.dig('body', 'errorCode') ||
+                     parsed&.dig('body', 'resultCode') ||
+                     parsed&.dig('errorCode') ||
+                     parsed&.dig('resultCode')
 
         return "#{prefix}: #{body}" unless error_msg
 

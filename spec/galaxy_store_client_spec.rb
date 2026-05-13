@@ -15,6 +15,21 @@ describe Fastlane::Helper::GalaxyStoreClient do
       )
     end
 
+    it 'surfaces resultCode and resultMessage from the body wrapper' do
+      body = '{"body":{"resultCode":"5021","resultMessage":"This binary is already in use."},' \
+             '"message":"Request failed with status code 400","from":"seller"}'
+      expect(format(body)).to eq(
+        '[POST /seller/contentUpdate] Request failed with status 400 (errorCode 5021): This binary is already in use.'
+      )
+    end
+
+    it 'prefers body.resultMessage over the top-level generic message' do
+      body = '{"body":{"resultMessage":"Specific cause"},"message":"Request failed with status code 400"}'
+      expect(format(body)).to eq(
+        '[POST /seller/contentUpdate] Request failed with status 400: Specific cause'
+      )
+    end
+
     it 'surfaces errorMsg only when errorCode is missing' do
       body = '{"body":{"errorMsg":"The title is invalid."}}'
       expect(format(body)).to eq(
