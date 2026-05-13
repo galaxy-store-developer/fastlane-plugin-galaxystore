@@ -153,6 +153,8 @@ The action scans the `galaxystore/` directory for:
 
 Only languages and fields that exist on disk are included in the update payload.
 
+> **Note:** The Galaxy Store API exposes additional listing fields (release notes, YouTube URL, hero image, support email, privacy policy URL, etc.) that this action does not currently touch — manage them through the [Galaxy Store seller portal](https://seller.samsungapps.com) for now. The local directory format is additive-only: new top-level files or per-language files for these fields can be added in future releases without breaking existing setups.
+
 **Returns:** A hash containing the content update API response.
 
 ---
