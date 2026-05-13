@@ -31,8 +31,8 @@ module Fastlane
           content_id,
           function,
           app_status,
-          rollout_rate: rollout_rate,
-          countries: countries
+          rollout_rate:,
+          countries:
         )
 
         if action == 'ENABLE'

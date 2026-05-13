@@ -80,7 +80,7 @@ module Fastlane
         screenshots_source = File.join(source_dir, 'images', 'phoneScreenshots')
         return unless Dir.exist?(screenshots_source)
 
-        screenshots = Dir.glob(File.join(screenshots_source, '*.{png,jpg,jpeg,gif}')).sort
+        screenshots = Dir.glob(File.join(screenshots_source, '*.{png,jpg,jpeg,gif}'))
         return if screenshots.empty?
 
         screenshots_dest = File.join(dest_dir, 'screenshots')

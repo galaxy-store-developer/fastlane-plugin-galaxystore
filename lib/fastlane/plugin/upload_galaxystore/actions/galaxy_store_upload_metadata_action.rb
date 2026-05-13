@@ -68,7 +68,7 @@ module Fastlane
 
           screenshots_dir = File.join(lang_dir, 'screenshots')
           if Dir.exist?(screenshots_dir)
-            lang_data[:screenshots] = Dir.glob(File.join(screenshots_dir, '*.{png,jpg,jpeg,gif}')).sort
+            lang_data[:screenshots] = Dir.glob(File.join(screenshots_dir, '*.{png,jpg,jpeg,gif}'))
           end
 
           metadata[:languages][lang_code] = lang_data

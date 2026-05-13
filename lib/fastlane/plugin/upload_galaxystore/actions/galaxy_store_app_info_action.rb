@@ -89,7 +89,7 @@ module Fastlane
 
           ext = File.extname(URI(url).path)
           ext = '.png' if ext.empty?
-          downloads << { url: url, dest: File.join(screenshots_dir, "#{index + 1}#{ext}") }
+          downloads << { url:, dest: File.join(screenshots_dir, "#{index + 1}#{ext}") }
         end
       end
 
@@ -129,7 +129,7 @@ module Fastlane
         end
 
         response = http.get(uri.request_uri)
-        if response.is_a?(Net::HTTPRedirection)
+        if response.kind_of?(Net::HTTPRedirection)
           download_single(response['location'], dest_path, redirect_limit - 1)
         else
           File.binwrite(dest_path, response.body)
@@ -146,7 +146,7 @@ module Fastlane
         http.read_timeout = DOWNLOAD_TIMEOUT
 
         response = http.get(uri.request_uri)
-        if response.is_a?(Net::HTTPRedirection)
+        if response.kind_of?(Net::HTTPRedirection)
           download_single(response['location'], dest_path, redirect_limit - 1)
         else
           File.binwrite(dest_path, response.body)

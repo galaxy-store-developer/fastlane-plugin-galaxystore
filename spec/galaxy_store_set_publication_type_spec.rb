@@ -32,9 +32,9 @@ describe Fastlane::Actions::GalaxyStoreSetPublicationTypeAction do
           .and_return({})
 
         action.run(base_params.merge(
-          publication_type: '02',
-          start_publication_date: '2026-06-01 09:00:00'
-        ))
+                     publication_type: '02',
+                     start_publication_date: '2026-06-01 09:00:00'
+                   ))
       end
 
       it 'raises when start_publication_date is missing' do
@@ -60,9 +60,9 @@ describe Fastlane::Actions::GalaxyStoreSetPublicationTypeAction do
       expect(Fastlane::UI).to receive(:important).with(/date will be ignored/)
 
       action.run(base_params.merge(
-        publication_type: '01',
-        start_publication_date: '2026-06-01 09:00:00'
-      ))
+                   publication_type: '01',
+                   start_publication_date: '2026-06-01 09:00:00'
+                 ))
     end
 
     it 'returns the result from update_content_metadata' do

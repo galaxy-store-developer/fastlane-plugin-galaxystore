@@ -58,7 +58,7 @@ module Fastlane
       def update_staged_rollout_binary(content_id, function, binary_seq)
         put('/seller/v2/content/stagedRolloutBinary', {
           contentId: content_id,
-          function: function,
+          function:,
           binarySeq: binary_seq.to_s
         })
       end
@@ -66,7 +66,7 @@ module Fastlane
       def set_staged_rollout_rate(content_id, function, app_status, rollout_rate: nil, countries: nil)
         payload = {
           contentId: content_id,
-          function: function,
+          function:,
           appStatus: app_status
         }
         payload[:rolloutRate] = rollout_rate if rollout_rate
