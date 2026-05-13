@@ -137,6 +137,9 @@ module Fastlane
         paths.map do |path|
           UI.message("Uploading screenshot for #{lang_code}: #{File.basename(path)}")
           result = client.upload_file(path)
+          # screenshotPath/reuseYn appear in contentInfo read responses; we mirror them
+          # on upload because the upload contract is undocumented and the API has been
+          # observed to accept the payload in this shape.
           { screenshotPath: nil, screenshotKey: result['fileKey'], reuseYn: false }
         end
       end
