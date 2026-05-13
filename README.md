@@ -4,6 +4,34 @@
 
 A [fastlane](https://github.com/fastlane/fastlane) plugin for managing Android app releases on the Samsung Galaxy Store using the [Galaxy Store Developer API](https://developer.samsung.com/galaxy-store/galaxy-store-developer-api.html).
 
+## Contents
+
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Authentication](#authentication)
+- [Actions](#actions)
+  - [`galaxy_store_import_from_supply`](#galaxy_store_import_from_supply)
+  - [`galaxy_store_app_info`](#galaxy_store_app_info)
+  - [`galaxy_store_upload_metadata`](#galaxy_store_upload_metadata)
+  - [`galaxy_store_app_list`](#galaxy_store_app_list)
+  - [`galaxy_store_upload_apk`](#galaxy_store_upload_apk)
+  - [`galaxy_store_set_publication_type`](#galaxy_store_set_publication_type)
+  - [`galaxy_store_submit_app`](#galaxy_store_submit_app)
+  - [`galaxy_store_publish_app`](#galaxy_store_publish_app)
+  - [`galaxy_store_update_staged_rollout_binary`](#galaxy_store_update_staged_rollout_binary)
+  - [`galaxy_store_set_staged_rollout`](#galaxy_store_set_staged_rollout)
+  - [`galaxy_store_staged_rollout`](#galaxy_store_staged_rollout)
+- [App status lifecycle](#app-status-lifecycle)
+- [Example Workflows](#example-workflows)
+  - [Full release workflow](#full-release-workflow)
+  - [Manual publication workflow](#manual-publication-workflow)
+  - [Import metadata from Google Play (Supply)](#import-metadata-from-google-play-supply)
+  - [Sync and update store listing metadata](#sync-and-update-store-listing-metadata)
+- [Issues and Feedback](#issues-and-feedback)
+- [Troubleshooting](#troubleshooting)
+- [About fastlane](#about-fastlane)
+
 ## Getting Started
 
 ### Prerequisites
