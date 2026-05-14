@@ -47,6 +47,32 @@ describe Fastlane::Actions::GalaxyStoreUpdateStagedRolloutBinaryAction do
     end
   end
 
+  describe 'binary_seq lane context fallback' do
+    before { Fastlane::Actions.lane_context.delete(Fastlane::Actions::SharedValues::GALAXY_STORE_BINARY_SEQ) }
+
+    it 'uses GALAXY_STORE_BINARY_SEQ from lane context when binary_seq is omitted' do
+      Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::GALAXY_STORE_BINARY_SEQ] = '99'
+      client = stub_client
+      expect(client).to receive(:update_staged_rollout_binary).with('000007498732', 'ADD', '99')
+
+      action.run(base_params.except(:binary_seq).merge(function: 'ADD'))
+    end
+
+    it 'prefers an explicit binary_seq over the lane context value' do
+      Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::GALAXY_STORE_BINARY_SEQ] = '99'
+      client = stub_client
+      expect(client).to receive(:update_staged_rollout_binary).with('000007498732', 'ADD', '15')
+
+      action.run(base_params.merge(function: 'ADD'))
+    end
+
+    it 'raises a clear error when no binary_seq is provided and the lane context is empty' do
+      expect do
+        action.run(base_params.except(:binary_seq).merge(function: 'ADD'))
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /No binary_seq/)
+    end
+  end
+
   describe 'ConfigItem validation' do
     let(:function_item) { action.available_options.find { |o| o.key == :function } }
     let(:content_id_item) { action.available_options.find { |o| o.key == :content_id } }

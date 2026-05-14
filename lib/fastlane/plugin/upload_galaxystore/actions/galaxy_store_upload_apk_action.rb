@@ -4,6 +4,10 @@ require_relative '../helper/shared_options'
 
 module Fastlane
   module Actions
+    module SharedValues
+      GALAXY_STORE_BINARY_SEQ = :GALAXY_STORE_BINARY_SEQ
+    end
+
     class GalaxyStoreUploadApkAction < Action
       def self.run(params)
         apk_path = params[:apk_path] || resolve_from_lane_context
@@ -31,8 +35,17 @@ module Fastlane
 
         UI.message("Adding binary to content ID #{content_id}...")
         result = client.add_binary(content_id, file_key, gms: params[:gms]&.upcase)
-        UI.success("Binary added successfully")
-        result
+
+        binary_seq = result.dig('data', 'binarySeq')
+        if binary_seq
+          Actions.lane_context[SharedValues::GALAXY_STORE_BINARY_SEQ] = binary_seq
+          UI.success("Binary added successfully (binarySeq: #{binary_seq})")
+        else
+          UI.success("Binary added successfully")
+          UI.important("Galaxy Store did not return a binarySeq — staged rollout chaining will not work for this run")
+        end
+
+        binary_seq
       end
 
       def self.description
@@ -44,7 +57,13 @@ module Fastlane
       end
 
       def self.return_value
-        "Returns a hash containing the add binary response from the Galaxy Store API"
+        "Returns the binarySeq (string) of the newly added binary, or nil if the API did not return one"
+      end
+
+      def self.output
+        [
+          ['GALAXY_STORE_BINARY_SEQ', 'The binarySeq of the binary just added to the app, suitable for chaining into galaxy_store_update_staged_rollout_binary']
+        ]
       end
 
       def self.details

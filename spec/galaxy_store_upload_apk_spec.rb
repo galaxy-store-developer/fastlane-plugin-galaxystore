@@ -21,9 +21,11 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
       allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).and_return(client)
       allow(client).to receive(:create_update)
       allow(client).to receive(:upload_file).and_return({ 'fileKey' => 'key123' })
-      allow(client).to receive(:add_binary).and_return({})
+      allow(client).to receive(:add_binary).and_return({ 'resultCode' => '0000', 'data' => { 'binarySeq' => '1' } })
     end
   end
+
+  before { Fastlane::Actions.lane_context.delete(Fastlane::Actions::SharedValues::GALAXY_STORE_BINARY_SEQ) }
 
   describe 'input validation' do
     it 'raises an error when the file does not exist' do
@@ -87,15 +89,14 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
 
         expect(client).to receive(:create_update).with('000007498732').ordered
         expect(client).to receive(:upload_file).with(apk_path).ordered.and_return({ 'fileKey' => 'key123' })
-        expect(client).to receive(:add_binary).with('000007498732', 'key123', gms: 'N').ordered.and_return({ 'result' => 'ok' })
+        expect(client).to receive(:add_binary).with('000007498732', 'key123', gms: 'N').ordered
+                                              .and_return({ 'resultCode' => '0000', 'data' => { 'binarySeq' => '7' } })
 
-        result = action.run(base_params.merge(apk_path:))
-
-        expect(result).to eq({ 'result' => 'ok' })
+        action.run(base_params.merge(apk_path:))
       end
     end
 
-    it 'returns the result from add_binary' do
+    it 'returns the binarySeq from the add_binary response' do
       Dir.mktmpdir do |tmp|
         apk_path = File.join(tmp, 'app.apk')
         File.write(apk_path, 'data')
@@ -104,11 +105,41 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
         allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).and_return(client)
         allow(client).to receive(:create_update)
         allow(client).to receive(:upload_file).and_return({ 'fileKey' => 'fk' })
-        allow(client).to receive(:add_binary).and_return({ 'binarySeq' => '42' })
+        allow(client).to receive(:add_binary).and_return({ 'data' => { 'binarySeq' => '42' } })
 
         result = action.run(base_params.merge(apk_path:))
 
-        expect(result['binarySeq']).to eq('42')
+        expect(result).to eq('42')
+      end
+    end
+
+    it 'writes the binarySeq to lane context' do
+      Dir.mktmpdir do |tmp|
+        apk_path = File.join(tmp, 'app.apk')
+        File.write(apk_path, 'data')
+        stub_client
+
+        action.run(base_params.merge(apk_path:))
+
+        expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::GALAXY_STORE_BINARY_SEQ]).to eq('1')
+      end
+    end
+
+    it 'returns nil and skips lane context when add_binary does not include a binarySeq' do
+      Dir.mktmpdir do |tmp|
+        apk_path = File.join(tmp, 'app.apk')
+        File.write(apk_path, 'data')
+
+        client = instance_double(Fastlane::Helper::GalaxyStoreClient)
+        allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).and_return(client)
+        allow(client).to receive(:create_update)
+        allow(client).to receive(:upload_file).and_return({ 'fileKey' => 'fk' })
+        allow(client).to receive(:add_binary).and_return({ 'resultCode' => '0000' })
+
+        result = action.run(base_params.merge(apk_path:))
+
+        expect(result).to be_nil
+        expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::GALAXY_STORE_BINARY_SEQ]).to be_nil
       end
     end
 

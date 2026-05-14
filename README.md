@@ -235,7 +235,9 @@ galaxy_store_upload_apk(
 | `apk_path` | Path to the `.apk` or `.aab` file to upload. If not provided will check the existing lane for Grade Output Paths  | No |
 | `gms` | `Y` if your build includes the Google Play Services SDK, `N` otherwise. Rarely changes between releases for a given app — hardcode it in your Fastfile | Yes |
 
-**Returns:** A hash containing the add binary API response.
+**Returns:** The `binarySeq` (string) of the newly added binary, or `nil` if the API did not include one.
+
+**Lane context:** Sets `SharedValues::GALAXY_STORE_BINARY_SEQ` to the same value, so `galaxy_store_update_staged_rollout_binary` can pick it up automatically when chained.
 
 ---
 
@@ -326,17 +328,21 @@ galaxy_store_publish_app(
 
 ### `galaxy_store_update_staged_rollout_binary`
 
-Adds or removes a binary from the staged rollout group for a given app. Use `galaxy_store_staged_rollout` first to view available binaries and their `binarySeq` values.
+Adds or removes a binary from the staged rollout group for a given app. Use `galaxy_store_staged_rollout` first to view available binaries and their `binarySeq` values, or chain directly after `galaxy_store_upload_apk` and the seq will be picked up from lane context automatically.
 
 ```ruby
-# Add a binary to staged rollout
+# Chain directly after upload — binary_seq picked up from lane context
+galaxy_store_upload_apk(
+  content_id: "000007654321",
+  apk_path: options[:apk_path],
+  gms: "N"
+)
 galaxy_store_update_staged_rollout_binary(
   content_id: "000007654321",
-  function: "ADD",
-  binary_seq: "15"
+  function: "ADD"
 )
 
-# Remove a binary from staged rollout
+# Or specify binary_seq explicitly
 galaxy_store_update_staged_rollout_binary(
   content_id: "000007654321",
   function: "REMOVE",
@@ -350,7 +356,7 @@ galaxy_store_update_staged_rollout_binary(
 | `service_account_id` | Galaxy Store service account ID | Yes |
 | `content_id` | 12-digit app content ID | Yes |
 | `function` | `ADD` or `REMOVE` the binary from the staged rollout group | Yes |
-| `binary_seq` | The sequence number of the binary. Use `galaxy_store_staged_rollout` to find this value | Yes |
+| `binary_seq` | The sequence number of the binary. Falls back to `SharedValues::GALAXY_STORE_BINARY_SEQ` (set by `galaxy_store_upload_apk`) when omitted. Use `galaxy_store_staged_rollout` to look up an existing binary's seq | No |
 
 **Returns:** A hash containing the staged rollout binary API response.
 
