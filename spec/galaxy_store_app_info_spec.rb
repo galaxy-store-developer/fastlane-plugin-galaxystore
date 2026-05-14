@@ -134,6 +134,64 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
         expect(title).to eq('New Title')
       end
     end
+
+    it 'writes new_feature.txt for the default language when newFeature is present' do
+      Dir.mktmpdir do |tmp|
+        entry = make_entry(lang: 'ENG')
+        entry['newFeature'] = 'Bug fixes and improvements'
+        action.write_metadata([entry], tmp)
+
+        path = File.join(tmp, 'galaxystore', 'ENG', 'new_feature.txt')
+        expect(File.read(path)).to eq('Bug fixes and improvements')
+      end
+    end
+
+    it 'writes new_feature.txt for additional languages independently' do
+      Dir.mktmpdir do |tmp|
+        add_lang = {
+          'languagecode' => 'FRA',
+          'appTitle' => 'Titre',
+          'shortDescription' => 'Court',
+          'description' => 'Longue',
+          'newFeature' => 'Corrections'
+        }
+        action.write_metadata([make_entry(add_languages: [add_lang])], tmp)
+
+        path = File.join(tmp, 'galaxystore', 'FRA', 'new_feature.txt')
+        expect(File.read(path)).to eq('Corrections')
+      end
+    end
+
+    it 'does not write new_feature.txt when newFeature is missing or empty' do
+      Dir.mktmpdir do |tmp|
+        entry = make_entry(lang: 'ENG')
+        entry['newFeature'] = ''
+        action.write_metadata([entry], tmp)
+
+        expect(File.exist?(File.join(tmp, 'galaxystore', 'ENG', 'new_feature.txt'))).to be false
+      end
+    end
+
+    it 'writes youtube_url.txt at the top level when youTubeURL is present' do
+      Dir.mktmpdir do |tmp|
+        entry = make_entry(lang: 'ENG')
+        entry['youTubeURL'] = 'https://youtu.be/abc'
+        action.write_metadata([entry], tmp)
+
+        path = File.join(tmp, 'galaxystore', 'youtube_url.txt')
+        expect(File.read(path)).to eq('https://youtu.be/abc')
+      end
+    end
+
+    it 'skips youtube_url.txt when youTubeURL is empty' do
+      Dir.mktmpdir do |tmp|
+        entry = make_entry(lang: 'ENG')
+        entry['youTubeURL'] = ''
+        action.write_metadata([entry], tmp)
+
+        expect(File.exist?(File.join(tmp, 'galaxystore', 'youtube_url.txt'))).to be false
+      end
+    end
   end
 
   describe '.write_json' do

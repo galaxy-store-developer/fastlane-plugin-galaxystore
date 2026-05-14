@@ -31,21 +31,24 @@ module Fastlane
         FileUtils.mkdir_p(galaxystore_path)
         UI.message("Writing Galaxy Store metadata to #{galaxystore_path}")
 
-        # Copy icon from the default language's Supply directory
+        # Copy app-level files from the default language's Supply directory
         default_bcp47 = language_map[default_language_code]
         if default_bcp47
           copy_icon(supply_path, default_bcp47, galaxystore_path)
+          copy_youtube_url(supply_path, default_bcp47, galaxystore_path)
+          copy_hero_image(supply_path, default_bcp47, galaxystore_path) if params[:import_hero_image]
         else
-          UI.important("Default language '#{default_language_code}' not found in Supply metadata — icon will not be copied")
+          UI.important("Default language '#{default_language_code}' not found in Supply metadata — app-level fields (icon, youtube URL, hero image) will not be copied")
         end
 
-        # Copy text metadata and screenshots for each mapped language
+        # Copy text metadata, release notes, and screenshots for each mapped language
         language_map.each do |galaxy_code, bcp47_dir|
           source_dir = File.join(supply_path, bcp47_dir)
           dest_dir = File.join(galaxystore_path, galaxy_code)
           FileUtils.mkdir_p(dest_dir)
 
           copy_text_files(source_dir, dest_dir)
+          copy_changelog(source_dir, dest_dir, params[:version_code])
           copy_screenshots(source_dir, dest_dir, galaxy_code)
 
           UI.message("Imported #{bcp47_dir} → #{galaxy_code}")
@@ -63,6 +66,44 @@ module Fastlane
         else
           UI.important("No icon found at #{icon_path}")
         end
+      end
+
+      def self.copy_youtube_url(supply_path, bcp47_dir, galaxystore_path)
+        video_path = File.join(supply_path, bcp47_dir, 'video.txt')
+        return unless File.exist?(video_path)
+
+        FileUtils.cp(video_path, File.join(galaxystore_path, 'youtube_url.txt'))
+        UI.message("Copied YouTube URL from #{bcp47_dir}")
+      end
+
+      def self.copy_hero_image(supply_path, bcp47_dir, galaxystore_path)
+        featured_graphic_dir = File.join(supply_path, bcp47_dir, 'images', 'featureGraphic')
+        images = Dir.exist?(featured_graphic_dir) ? Dir.glob(File.join(featured_graphic_dir, '*.{png,jpg,jpeg}')) : []
+
+        if images.empty?
+          UI.important("import_hero_image was enabled but no image found in #{featured_graphic_dir}")
+          return
+        end
+
+        ext = File.extname(images.first)
+        FileUtils.cp(images.first, File.join(galaxystore_path, "hero_image#{ext}"))
+        UI.message("Copied hero image from #{bcp47_dir}")
+      end
+
+      def self.copy_changelog(source_dir, dest_dir, version_code)
+        changelogs_dir = File.join(source_dir, 'changelogs')
+        return unless Dir.exist?(changelogs_dir)
+
+        source = if version_code
+                   version_specific = File.join(changelogs_dir, "#{version_code}.txt")
+                   File.exist?(version_specific) ? version_specific : File.join(changelogs_dir, 'default.txt')
+                 else
+                   File.join(changelogs_dir, 'default.txt')
+                 end
+        return unless File.exist?(source)
+
+        FileUtils.cp(source, File.join(dest_dir, 'new_feature.txt'))
+        UI.message("  Copied release notes from #{File.basename(source)}")
       end
 
       def self.copy_text_files(source_dir, dest_dir)
@@ -145,6 +186,21 @@ module Fastlane
             description: "Hash overriding which BCP-47 variant to use for a given Galaxy Store language code, e.g. { 'SPA' => 'es-419', 'POR' => 'pt-BR' }",
             optional: true,
             type: Hash
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :import_hero_image,
+            env_name: "GALAXY_STORE_IMPORT_HERO_IMAGE",
+            description: "When true, copies the default language's Supply featureGraphic to galaxystore/hero_image. Galaxy Store only supports hero images for apps in the Game category — uploads to non-Game apps will fail at the API",
+            optional: true,
+            type: Boolean,
+            default_value: false
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :version_code,
+            env_name: "GALAXY_STORE_VERSION_CODE",
+            description: "APK version code matching the release being uploaded. When set, the action looks for changelogs/<version_code>.txt per language and falls back to changelogs/default.txt. When omitted, only default.txt is used",
+            optional: true,
+            type: String
           )
         ]
       end

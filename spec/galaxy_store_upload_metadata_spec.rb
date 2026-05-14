@@ -122,7 +122,7 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
     end
 
     it 'puts the default language fields at the top level' do
-      payload = action.build_payload('000007498732', 'ENG', base_metadata, 'icon_key_123', {})
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, 'icon_key_123', nil, {})
 
       expect(payload[:contentId]).to eq('000007498732')
       expect(payload[:defaultLanguageCode]).to eq('ENG')
@@ -133,13 +133,63 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
     end
 
     it 'omits iconKey when icon_key is nil' do
-      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, {})
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, nil, {})
 
       expect(payload).not_to have_key(:iconKey)
     end
 
+    it 'includes heroImageKey when hero_image_key is set' do
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, 'hero_key_456', {})
+
+      expect(payload[:heroImageKey]).to eq('hero_key_456')
+    end
+
+    it 'omits heroImageKey when hero_image_key is nil' do
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, nil, {})
+
+      expect(payload).not_to have_key(:heroImageKey)
+    end
+
+    it 'includes youTubeURL when present and non-empty' do
+      metadata = base_metadata.merge(youtube_url: 'https://youtube.com/watch?v=abc')
+      payload = action.build_payload('000007498732', 'ENG', metadata, nil, nil, {})
+
+      expect(payload[:youTubeURL]).to eq('https://youtube.com/watch?v=abc')
+    end
+
+    it 'omits youTubeURL when blank' do
+      metadata = base_metadata.merge(youtube_url: '')
+      payload = action.build_payload('000007498732', 'ENG', metadata, nil, nil, {})
+
+      expect(payload).not_to have_key(:youTubeURL)
+    end
+
+    it 'includes newFeature for the default language at the top level' do
+      metadata = {
+        icon_path: nil,
+        languages: { 'ENG' => { title: 'T', short_description: 'S', long_description: 'L', new_feature: 'Bug fixes' } }
+      }
+      payload = action.build_payload('000007498732', 'ENG', metadata, nil, nil, {})
+
+      expect(payload[:newFeature]).to eq('Bug fixes')
+    end
+
+    it 'includes newFeature in addLanguage entries' do
+      metadata = {
+        icon_path: nil,
+        languages: {
+          'ENG' => { title: 'T' },
+          'FRA' => { title: 'T', new_feature: 'Corrections' }
+        }
+      }
+      payload = action.build_payload('000007498732', 'ENG', metadata, nil, nil, {})
+
+      fra = payload[:addLanguage].find { |l| l[:languagecode] == 'FRA' }
+      expect(fra[:newFeature]).to eq('Corrections')
+    end
+
     it 'puts additional languages in addLanguage array' do
-      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, {})
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, nil, {})
 
       add_lang = payload[:addLanguage]
       expect(add_lang).to be_an(Array)
@@ -160,7 +210,7 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
         }
       }
 
-      payload = action.build_payload('000007498732', 'ENG', single_lang_metadata, nil, {})
+      payload = action.build_payload('000007498732', 'ENG', single_lang_metadata, nil, nil, {})
 
       expect(payload).not_to have_key(:addLanguage)
     end
@@ -171,7 +221,7 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
         languages: { 'ENG' => {} }
       }
 
-      payload = action.build_payload('000007498732', 'ENG', empty_metadata, nil, {})
+      payload = action.build_payload('000007498732', 'ENG', empty_metadata, nil, nil, {})
 
       expect(payload).not_to have_key(:appTitle)
       expect(payload).not_to have_key(:shortDescription)
@@ -184,7 +234,7 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
         { screenshotPath: nil, screenshotKey: 'key2', reuseYn: false }
       ] }
 
-      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, entries)
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, nil, entries)
 
       expect(payload[:screenshots]).to eq(entries['ENG'])
     end
@@ -194,14 +244,14 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
         { screenshotPath: nil, screenshotKey: 'fra_key', reuseYn: false }
       ] }
 
-      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, entries)
+      payload = action.build_payload('000007498732', 'ENG', base_metadata, nil, nil, entries)
 
       fra = payload[:addLanguage].find { |l| l[:languagecode] == 'FRA' }
       expect(fra[:screenshots]).to eq(entries['FRA'])
     end
 
     it 'handles a missing default language gracefully (uses empty hash)' do
-      payload = action.build_payload('000007498732', 'DEU', base_metadata, nil, {})
+      payload = action.build_payload('000007498732', 'DEU', base_metadata, nil, nil, {})
 
       # DEU is not in the metadata — should not raise, and top-level text fields absent
       expect(payload[:defaultLanguageCode]).to eq('DEU')

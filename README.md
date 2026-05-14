@@ -81,7 +81,10 @@ The action:
 - Maps BCP-47 language codes (used by Supply) to Galaxy Store language codes
 - Copies `title.txt`, `short_description.txt`, and `full_description.txt` → `long_description.txt` for each language
 - Copies phone screenshots from each language's `phoneScreenshots/` directory
+- Copies a `changelogs/` file as `<galaxy_code>/new_feature.txt` per language. When `version_code` is set, looks for `changelogs/<version_code>.txt` and falls back to `changelogs/default.txt`. When `version_code` is omitted, uses `default.txt` only
 - Copies `icon.png` from the default language's directory to the top-level `galaxystore/` folder
+- Copies the default language's `video.txt` to top-level `youtube_url.txt`
+- Optionally copies the default language's `featureGraphic` to top-level `hero_image.png` (Game-category apps only — see `import_hero_image` below)
 - When multiple regional variants of a language exist (e.g. `es`, `es-ES`, `es-419`), selects the best one automatically with a warning
 
 ```ruby
@@ -106,12 +109,14 @@ galaxy_store_import_from_supply(
 | Parameter | Description | Required | Default |
 |-----------|-------------|----------|---------|
 | `metadata_path` | Path to the metadata folder containing the `android` Supply directory | No | `fastlane/metadata` |
-| `default_language_code` | Galaxy Store language code for the default listing. Determines which language's icon is used | No | `ENG` |
+| `default_language_code` | Galaxy Store language code for the default listing. Determines which language's icon, YouTube URL, and hero image are used | No | `ENG` |
 | `language_priority` | Hash overriding which BCP-47 variant to use per Galaxy Store language code | No | |
+| `import_hero_image` | Copy the default language's `featureGraphic` to `galaxystore/hero_image.png`. Only enable for Game-category apps — uploads to non-Game apps will fail at the Galaxy Store API | No | `false` |
+| `version_code` | APK version code matching the release being uploaded. When set, picks `changelogs/<version_code>.txt` per language and falls back to `default.txt`. When omitted, only `default.txt` is used | No | |
 
 **Returns:** A hash mapping Galaxy Store language codes to the BCP-47 directories they were imported from.
 
-> **Note:** Galaxy Store only supports one app icon. The icon is taken from the `default_language_code` language's Supply directory. If that language is not present in the Supply metadata, no icon will be copied.
+> **Note:** Galaxy Store only supports one app icon, one YouTube URL, and one hero image. They are taken from the `default_language_code` language's Supply directory. If that language is not present in the Supply metadata, those app-level files will not be copied.
 
 ---
 
@@ -126,10 +131,13 @@ The following files are written for each supported language:
 ```
 fastlane/metadata/galaxystore/
   icon.png
+  hero_image.png       # only when the listing has one (Game-category apps)
+  youtube_url.txt      # only when the listing has a YouTube URL set
   ENG/
     title.txt
     short_description.txt
     long_description.txt
+    new_feature.txt    # release notes; only when the listing has them
     screenshots/
       1.png
       2.png
@@ -173,15 +181,18 @@ galaxy_store_upload_metadata(
 | `content_id` | 12-digit app content ID | Yes | |
 | `default_language_code` | Language code for the default listing | No | `ENG` |
 | `metadata_path` | Path to the metadata folder | No | `fastlane/metadata` |
+| `upload_hero_image` | Upload `hero_image.<ext>` if present in the metadata directory. Only enable for Game-category apps — the Galaxy Store API rejects hero images for non-Game apps | No | `false` |
 
 The action scans the `galaxystore/` directory for:
 - `icon.png` (or other image extension) at the top level
-- `title.txt`, `short_description.txt`, `long_description.txt` in each language directory
+- `hero_image.png` at the top level (uploaded only when `upload_hero_image: true`)
+- `youtube_url.txt` at the top level
+- `title.txt`, `short_description.txt`, `long_description.txt`, `new_feature.txt` in each language directory
 - Images in each language's `screenshots/` subdirectory
 
 Only languages and fields that exist on disk are included in the update payload.
 
-> **Note:** The Galaxy Store API exposes additional listing fields (release notes, YouTube URL, hero image, support email, privacy policy URL, etc.) that this action does not currently touch — manage them through the [Galaxy Store seller portal](https://seller.samsungapps.com) for now. The local directory format is additive-only: new top-level files or per-language files for these fields can be added in future releases without breaking existing setups.
+> **Note:** The Galaxy Store API exposes additional listing fields (support email, privacy policy URL, copyright holder, age limits, categories, etc.) that this action does not touch — manage them through the [Galaxy Store seller portal](https://seller.samsungapps.com). The local directory format is additive-only: new top-level files or per-language files for these fields can be added in future releases without breaking existing setups.
 
 **Returns:** A hash containing the content update API response.
 

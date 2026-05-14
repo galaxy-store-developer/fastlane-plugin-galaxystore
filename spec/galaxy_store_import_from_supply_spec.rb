@@ -17,13 +17,9 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
       FileUtils.mkdir_p(File.join(lang_dir, 'images'))
 
       files.each do |filename, content|
-        if filename.start_with?('images/')
-          dest = File.join(lang_dir, filename)
-          FileUtils.mkdir_p(File.dirname(dest))
-          File.write(dest, content)
-        else
-          File.write(File.join(lang_dir, filename), content)
-        end
+        dest = File.join(lang_dir, filename)
+        FileUtils.mkdir_p(File.dirname(dest))
+        File.write(dest, content)
       end
     end
 
@@ -244,6 +240,171 @@ describe Fastlane::Actions::GalaxyStoreImportFromSupplyAction do
 
         screenshots_dir = File.join(tmp, 'galaxystore', 'ENG', 'screenshots')
         expect(Dir.exist?(screenshots_dir)).to be false
+      end
+    end
+  end
+
+  describe 'YouTube URL handling' do
+    it "copies the default language's video.txt to top-level youtube_url.txt" do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp,
+                         languages: {
+                           'en' => { 'title.txt' => 'App', 'video.txt' => 'https://youtu.be/abc' },
+                           'fr' => { 'title.txt' => 'App', 'video.txt' => 'https://youtu.be/different' }
+                         })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {})
+
+        url_path = File.join(tmp, 'galaxystore', 'youtube_url.txt')
+        expect(File.exist?(url_path)).to be true
+        expect(File.read(url_path)).to eq('https://youtu.be/abc')
+      end
+    end
+
+    it 'skips when the default language has no video.txt' do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp, languages: { 'en' => { 'title.txt' => 'App' } })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {})
+
+        expect(File.exist?(File.join(tmp, 'galaxystore', 'youtube_url.txt'))).to be false
+      end
+    end
+  end
+
+  describe 'changelog handling' do
+    it 'uses default.txt when no version_code is specified' do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp,
+                         languages: {
+                           'en' => {
+                             'title.txt' => 'App',
+                             'changelogs/default.txt' => 'default notes',
+                             'changelogs/100100.txt' => 'old version notes'
+                           }
+                         })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {})
+
+        dest = File.join(tmp, 'galaxystore', 'ENG', 'new_feature.txt')
+        expect(File.exist?(dest)).to be true
+        expect(File.read(dest)).to eq('default notes')
+      end
+    end
+
+    it 'uses <version_code>.txt when version_code matches an existing file' do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp,
+                         languages: {
+                           'en' => {
+                             'title.txt' => 'App',
+                             'changelogs/default.txt' => 'default notes',
+                             'changelogs/100200.txt' => 'release notes for 100200'
+                           }
+                         })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {}, version_code: '100200')
+
+        dest = File.join(tmp, 'galaxystore', 'ENG', 'new_feature.txt')
+        expect(File.read(dest)).to eq('release notes for 100200')
+      end
+    end
+
+    it 'falls back to default.txt when version_code does not match any file' do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp,
+                         languages: {
+                           'en' => {
+                             'title.txt' => 'App',
+                             'changelogs/default.txt' => 'default notes',
+                             'changelogs/100100.txt' => 'old notes'
+                           }
+                         })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {}, version_code: '100200')
+
+        dest = File.join(tmp, 'galaxystore', 'ENG', 'new_feature.txt')
+        expect(File.read(dest)).to eq('default notes')
+      end
+    end
+
+    it 'copies per-language changelogs independently' do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp,
+                         languages: {
+                           'en' => { 'title.txt' => 'App', 'changelogs/default.txt' => 'EN notes' },
+                           'fr' => { 'title.txt' => 'App', 'changelogs/default.txt' => 'FR notes' }
+                         })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {})
+
+        expect(File.read(File.join(tmp, 'galaxystore', 'ENG', 'new_feature.txt'))).to eq('EN notes')
+        expect(File.read(File.join(tmp, 'galaxystore', 'FRA', 'new_feature.txt'))).to eq('FR notes')
+      end
+    end
+
+    it 'skips when no changelogs directory exists' do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp, languages: { 'en' => { 'title.txt' => 'App' } })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {})
+
+        expect(File.exist?(File.join(tmp, 'galaxystore', 'ENG', 'new_feature.txt'))).to be false
+      end
+    end
+
+    it 'skips when version_code does not match and default.txt does not exist' do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp,
+                         languages: {
+                           'en' => { 'title.txt' => 'App', 'changelogs/100100.txt' => 'old notes' }
+                         })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {}, version_code: '100200')
+
+        expect(File.exist?(File.join(tmp, 'galaxystore', 'ENG', 'new_feature.txt'))).to be false
+      end
+    end
+  end
+
+  describe 'hero image handling' do
+    it "copies the default language's featureGraphic when import_hero_image is true" do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp,
+                         languages: {
+                           'en' => { 'title.txt' => 'App', 'images/featureGraphic/feature.png' => 'feature_data' }
+                         })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {}, import_hero_image: true)
+
+        expect(File.exist?(File.join(tmp, 'galaxystore', 'hero_image.png'))).to be true
+        expect(File.read(File.join(tmp, 'galaxystore', 'hero_image.png'))).to eq('feature_data')
+      end
+    end
+
+    it 'does not copy the hero image when import_hero_image is false (default)' do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp,
+                         languages: {
+                           'en' => { 'title.txt' => 'App', 'images/featureGraphic/feature.png' => 'feature_data' }
+                         })
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {})
+
+        expect(File.exist?(File.join(tmp, 'galaxystore', 'hero_image.png'))).to be false
+      end
+    end
+
+    it 'warns and skips when import_hero_image is true but no feature graphic exists' do
+      Dir.mktmpdir do |tmp|
+        build_supply_dir(tmp, languages: { 'en' => { 'title.txt' => 'App' } })
+
+        allow(Fastlane::UI).to receive(:important)
+        expect(Fastlane::UI).to receive(:important).with(/import_hero_image was enabled but no image found/)
+
+        action.run(metadata_path: tmp, default_language_code: 'ENG', language_priority: {}, import_hero_image: true)
+
+        expect(File.exist?(File.join(tmp, 'galaxystore', 'hero_image.png'))).to be false
       end
     end
   end

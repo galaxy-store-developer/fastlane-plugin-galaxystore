@@ -48,15 +48,17 @@ module Fastlane
         downloads = []
 
         default_lang_dir = File.join(galaxystore_path, entry['defaultLanguageCode'])
-        write_language_files(default_lang_dir, entry['appTitle'], entry['shortDescription'], entry['longDescription'])
+        write_language_files(default_lang_dir, entry['appTitle'], entry['shortDescription'], entry['longDescription'], entry['newFeature'])
         collect_screenshot_downloads(Array(entry['screenshots']), default_lang_dir, downloads)
 
         Array(entry['addLanguage']).each do |lang|
           lang_dir = File.join(galaxystore_path, lang['languagecode'])
-          write_language_files(lang_dir, lang['appTitle'], lang['shortDescription'], lang['description'])
+          write_language_files(lang_dir, lang['appTitle'], lang['shortDescription'], lang['description'], lang['newFeature'])
           screenshots = Array(lang['screenshots']).reject { |s| s['screenshotPath'].nil? }
           collect_screenshot_downloads(screenshots, lang_dir, downloads) unless screenshots.empty?
         end
+
+        write_app_level_text(galaxystore_path, 'youtube_url.txt', entry['youTubeURL'])
 
         if entry['icon']
           uri = URI(entry['icon'])
@@ -65,9 +67,23 @@ module Fastlane
           downloads << { url: entry['icon'], dest: File.join(galaxystore_path, "icon#{ext}") }
         end
 
+        if entry['heroImage']
+          uri = URI(entry['heroImage'])
+          ext = File.extname(uri.path)
+          ext = '.png' if ext.empty?
+          downloads << { url: entry['heroImage'], dest: File.join(galaxystore_path, "hero_image#{ext}") }
+        end
+
         download_files(downloads)
 
         UI.success("Metadata written from #{entry['contentStatus']} listing")
+      end
+
+      def self.write_app_level_text(galaxystore_path, filename, value)
+        return if value.nil? || value.empty?
+
+        File.write(File.join(galaxystore_path, filename), value)
+        UI.message("  Wrote #{filename}")
       end
 
       def self.write_json(app_info, metadata_path)
@@ -153,12 +169,13 @@ module Fastlane
         end
       end
 
-      def self.write_language_files(dir_path, title, short_description, long_description)
+      def self.write_language_files(dir_path, title, short_description, long_description, new_feature = nil)
         FileUtils.mkdir_p(dir_path)
         File.write(File.join(dir_path, 'title.txt'), title.to_s)
         File.write(File.join(dir_path, 'short_description.txt'), short_description.to_s)
         File.write(File.join(dir_path, 'long_description.txt'), long_description.to_s)
-        UI.message("  #{File.basename(dir_path)}: title, short_description, long_description")
+        File.write(File.join(dir_path, 'new_feature.txt'), new_feature) if new_feature && !new_feature.empty?
+        UI.message("  #{File.basename(dir_path)}: title, short_description, long_description#{', new_feature' if new_feature && !new_feature.empty?}")
       end
 
       def self.description
