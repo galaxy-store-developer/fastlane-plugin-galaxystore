@@ -122,7 +122,7 @@ galaxy_store_import_from_supply(
 
 ### `galaxy_store_app_info`
 
-Retrieves detailed information for a specific app and writes the metadata to local files in `fastlane/metadata/galaxystore/`. Prefers an in-progress listing (`REGISTERING`, `UPDATING`, or `READY_FOR_CHANGE`) if one exists, otherwise falls back to the `FOR_SALE` listing. See [App status lifecycle](#app-status-lifecycle) for what each status means.
+Retrieves detailed information for a specific app and writes the metadata to local files in `fastlane/metadata/galaxystore/`. Prefers any in-progress listing (any `contentStatus` other than `FOR_SALE`) if one exists, otherwise falls back to the `FOR_SALE` listing. See [App status lifecycle](#app-status-lifecycle) for the statuses you'll typically see.
 
 > **Warning:** Running this action can overwrite the metadata that's stored your local metadata directory if you have made local edits or have imported Play Store metadata from Supply.  
 
@@ -470,16 +470,18 @@ galaxy_store_staged_rollout(
 
 ## App status lifecycle
 
-Each listing returned by `galaxy_store_app_info` has a `contentStatus` field that reflects where it sits in the Galaxy Store publication flow:
+Each listing returned by `galaxy_store_app_info` has a `contentStatus` field that reflects where it sits in the Galaxy Store publication flow. Common values:
 
 | Status | Meaning |
 |--------|---------|
-| `REGISTERING` | A first-time submission that has not yet been approved |
-| `UPDATING` | An update to a previously published app that has not yet been approved |
-| `READY_FOR_CHANGE` | The submission has passed review and is awaiting manual publication. Only appears when `galaxy_store_set_publication_type` was set to `'03'` (manual) |
+| `REGISTERING` | A first-time submission that has not yet been submitted for review |
+| `UPDATING` | An update to a previously published app that has not yet been submitted for review |
+| `READY_FOR_REVIEW` | Submitted, queued for Samsung's review pipeline |
+| `UNDER_DEVICE_TEST` | In the device-testing phase of review |
+| `READY_FOR_CHANGE` | Passed review and awaiting manual publication. Only appears when `galaxy_store_set_publication_type` was set to `'03'` (manual) |
 | `FOR_SALE` | The listing is live on the Galaxy Store |
 
-A rejected submission returns to `REGISTERING` or `UPDATING` rather than producing a distinct rejected status — check the seller portal for review feedback.
+Samsung's review pipeline includes additional intermediate states we may not have documented yet. The `galaxy_store_app_info` action handles this by treating any `contentStatus` other than `FOR_SALE` as in-progress, so new statuses are picked up automatically. A rejected submission returns to `REGISTERING` or `UPDATING` rather than producing a distinct rejected status — check the seller portal for review feedback.
 
 After `galaxy_store_submit_app` with manual publication (`'03'`), poll `galaxy_store_app_info` and call `galaxy_store_publish_app` once the in-progress listing reaches `READY_FOR_CHANGE`:
 

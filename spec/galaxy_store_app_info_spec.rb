@@ -80,16 +80,30 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
       end
     end
 
-    it 'skips writing when no REGISTERING, UPDATING, READY_FOR_CHANGE, or FOR_SALE entry exists' do
+    it 'skips writing when no entry has a contentStatus' do
       Dir.mktmpdir do |tmp|
         entry = make_entry
-        entry['contentStatus'] = 'DRAFT'
+        entry.delete('contentStatus')
 
         action.write_metadata([entry], tmp)
 
         gs_path = File.join(tmp, 'galaxystore')
         expect(Dir.exist?(gs_path)).to be true
         expect(Dir.children(gs_path)).to be_empty
+      end
+    end
+
+    it 'prefers any non-FOR_SALE entry over FOR_SALE (covers in-progress statuses we may not know about)' do
+      Dir.mktmpdir do |tmp|
+        for_sale = make_entry(lang: 'ENG', status: 'FOR_SALE')
+        for_sale['appTitle'] = 'Old Title'
+        in_progress = make_entry(lang: 'ENG', status: 'UNDER_DEVICE_TEST')
+        in_progress['appTitle'] = 'New Title'
+
+        action.write_metadata([for_sale, in_progress], tmp)
+
+        title = File.read(File.join(tmp, 'galaxystore', 'ENG', 'title.txt'))
+        expect(title).to eq('New Title')
       end
     end
 

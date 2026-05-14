@@ -30,12 +30,11 @@ module Fastlane
         galaxystore_path = File.join(metadata_path, 'galaxystore')
 
         entries = Array(app_info)
-        in_progress_statuses = %w[REGISTERING UPDATING READY_FOR_CHANGE]
-        entry = entries.find { |e| in_progress_statuses.include?(e['contentStatus']) } ||
+        entry = entries.find { |e| e['contentStatus'] && e['contentStatus'] != 'FOR_SALE' } ||
                 entries.find { |e| e['contentStatus'] == 'FOR_SALE' }
 
         if entry.nil?
-          UI.important("No REGISTERING, UPDATING, READY_FOR_CHANGE, or FOR_SALE listing found — skipping metadata write")
+          UI.important("No listing with a contentStatus found — skipping metadata write")
           FileUtils.mkdir_p(galaxystore_path)
           return
         end
@@ -192,8 +191,8 @@ module Fastlane
 
       def self.details
         "Uses the Galaxy Store Content Publish API to retrieve detailed information about an app and " \
-          "writes metadata to metadata/galaxystore/<language_code>/. Prefers an in-progress listing " \
-          "(REGISTERING, UPDATING, or READY_FOR_CHANGE) if one exists, otherwise falls back to the FOR_SALE listing."
+          "writes metadata to metadata/galaxystore/<language_code>/. Prefers any in-progress listing " \
+          "(anything other than FOR_SALE) if one exists, otherwise falls back to the FOR_SALE listing."
       end
 
       def self.available_options
