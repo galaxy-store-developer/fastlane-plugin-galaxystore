@@ -12,3 +12,7 @@ rollout_countries.json
 /rdoc/
 coverage
 test-results
+
+## Generated verification reports (regenerate locally via verification-report/build_report.py):
+/verification-report/*.xlsx
+/verification-report/rspec_result.json
