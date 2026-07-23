@@ -199,4 +199,4 @@ Bundler/OrderedGems:
   TreatCommentsAsGroupSeparators: false
 Gemspec/DevelopmentDependencies:
   Enabled: true
-  EnforcedStyle: Gemfile
+  EnforcedStyle: gemspec
