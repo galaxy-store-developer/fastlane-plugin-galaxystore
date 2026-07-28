@@ -1,6 +1,7 @@
 *.gem
 Gemfile.lock
 .DS_Store
+/CLAUDE.md
 /fastlane/
 app_list.json
 rollout_countries.json

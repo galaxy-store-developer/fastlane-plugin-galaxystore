@@ -1,10 +1,10 @@
 lib = File.expand_path("lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'fastlane/plugin/upload_galaxystore/version'
+require 'fastlane/plugin/galaxystore/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = 'fastlane-plugin-upload_galaxystore'
-  spec.version       = Fastlane::UploadGalaxystore::VERSION
+  spec.name          = 'fastlane-plugin-galaxystore'
+  spec.version       = Fastlane::Galaxystore::VERSION
   spec.author        = 'Cristian Lewczyk'
   spec.email         = 'c.lewczyk@samsung.com'
 
@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
                        'Provides actions for uploading APK/AAB binaries, syncing store listing ' \
                        'metadata (including import from Google Play Supply), submitting apps for ' \
                        'review, controlling publication timing, and managing staged rollouts.'
-  # spec.homepage      = "https://github.com/<GITHUB_USERNAME>/fastlane-plugin-upload_galaxystore"
+  # spec.homepage      = "https://github.com/<GITHUB_USERNAME>/fastlane-plugin-galaxystore"
   spec.license       = "Apache-2.0"
 
   spec.files         = Dir["lib/**/*"] + %w(README.md CHANGELOG.md LICENSE)

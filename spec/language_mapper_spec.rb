@@ -1,4 +1,4 @@
-require 'fastlane/plugin/upload_galaxystore'
+require 'fastlane/plugin/galaxystore'
 
 describe Fastlane::Helper::LanguageMapper do
   describe '.map_bcp47' do

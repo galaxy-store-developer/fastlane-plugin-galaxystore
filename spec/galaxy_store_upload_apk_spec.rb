@@ -1,4 +1,4 @@
-require 'fastlane/plugin/upload_galaxystore'
+require 'fastlane/plugin/galaxystore'
 require 'tmpdir'
 
 describe Fastlane::Actions::GalaxyStoreUploadApkAction do

@@ -127,7 +127,7 @@ module Fastlane
       def apply_auth_headers(request)
         request['Authorization'] = "Bearer #{@access_token}"
         request['service-account-id'] = @service_account_id
-        request['X-Client-Source'] = 'fastlane-plugin-upload_galaxystore'
+        request['X-Client-Source'] = 'fastlane-plugin-galaxystore'
       end
 
       def execute(request, uri)
