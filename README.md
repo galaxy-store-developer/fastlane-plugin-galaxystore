@@ -1,6 +1,6 @@
-# fastlane-plugin-upload_galaxystore
+# fastlane-plugin-galaxystore
 
-[![fastlane Plugin Badge](https://rawcdn.githack.com/fastlane/fastlane/master/fastlane/assets/plugin-badge.svg)](https://rubygems.org/gems/fastlane-plugin-upload_galaxystore)
+[![fastlane Plugin Badge](https://rawcdn.githack.com/fastlane/fastlane/master/fastlane/assets/plugin-badge.svg)](https://rubygems.org/gems/fastlane-plugin-galaxystore)
 
 A [fastlane](https://github.com/fastlane/fastlane) plugin for managing Android app releases on the Samsung Galaxy Store using the [Galaxy Store Developer API](https://developer.samsung.com/galaxy-store/galaxy-store-developer-api.html).
 
@@ -32,13 +32,13 @@ Before using this plugin you will need:
 Add the plugin to your project:
 
 ```bash
-fastlane add_plugin upload_galaxystore
+fastlane add_plugin galaxystore
 ```
 
 Or add it manually to your `fastlane/Pluginfile`:
 
 ```ruby
-gem 'fastlane-plugin-upload_galaxystore'
+gem 'fastlane-plugin-galaxystore'
 ```
 
 Then run `bundle install`.

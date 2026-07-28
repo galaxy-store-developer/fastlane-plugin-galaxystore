@@ -1,4 +1,4 @@
-require 'fastlane/plugin/upload_galaxystore'
+require 'fastlane/plugin/galaxystore'
 
 describe Fastlane::Actions::GalaxyStoreStagedRolloutAction do
   let(:action) { described_class }
