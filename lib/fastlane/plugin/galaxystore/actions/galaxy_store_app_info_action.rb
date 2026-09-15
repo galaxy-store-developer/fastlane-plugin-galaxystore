@@ -1,7 +1,9 @@
 require 'fastlane/action'
 require 'fileutils'
 require 'json'
+require 'ipaddr'
 require 'net/http'
+require 'resolv'
 require 'uri'
 require_relative '../helper/galaxy_store_client'
 require_relative '../helper/shared_options'
@@ -10,6 +12,14 @@ module Fastlane
   module Actions
     class GalaxyStoreAppInfoAction < Action
       DOWNLOAD_TIMEOUT = 30
+      BLOCKED_IP_RANGES = [
+        IPAddr.new('127.0.0.0/8'),
+        IPAddr.new('10.0.0.0/8'),
+        IPAddr.new('172.16.0.0/12'),
+        IPAddr.new('192.168.0.0/16'),
+        IPAddr.new('169.254.0.0/16'),
+        IPAddr.new('::1/128')
+      ].freeze
 
       def self.run(params)
         client = Helper::GalaxyStoreClient.new(
@@ -145,6 +155,7 @@ module Fastlane
 
         response = http.get(uri.request_uri)
         if response.kind_of?(Net::HTTPRedirection)
+          validate_redirect_url!(response['location'])
           download_single(response['location'], dest_path, redirect_limit - 1)
         else
           File.binwrite(dest_path, response.body)
@@ -162,9 +173,33 @@ module Fastlane
 
         response = http.get(uri.request_uri)
         if response.kind_of?(Net::HTTPRedirection)
+          validate_redirect_url!(response['location'])
           download_single(response['location'], dest_path, redirect_limit - 1)
         else
           File.binwrite(dest_path, response.body)
+        end
+      end
+
+      def self.validate_redirect_url!(url)
+        uri = URI(url)
+
+        unless uri.scheme == 'https'
+          UI.user_error!("Redirect blocked: HTTPS required, got #{uri.scheme} (#{url})")
+        end
+
+        begin
+          addresses = Resolv.getaddresses(uri.host)
+        rescue Resolv::ResolvError
+          UI.user_error!("Redirect blocked: cannot resolve #{uri.host} (#{url})")
+        end
+
+        addresses.each do |addr|
+          ip = IPAddr.new(addr)
+          BLOCKED_IP_RANGES.each do |range|
+            if range.include?(ip)
+              UI.user_error!("Redirect blocked: #{uri.host} resolves to private address #{addr} (#{url})")
+            end
+          end
         end
       end
 
