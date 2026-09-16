@@ -1,7 +1,9 @@
 require 'fastlane/action'
 require 'fileutils'
 require 'json'
+require 'ipaddr'
 require 'net/http'
+require 'resolv'
 require 'uri'
 require_relative '../helper/galaxy_store_client'
 require_relative '../helper/shared_options'
@@ -10,6 +12,15 @@ module Fastlane
   module Actions
     class GalaxyStoreAppInfoAction < Action
       DOWNLOAD_TIMEOUT = 30
+      IMAGE_EXTENSIONS = %w[.png .jpg .jpeg .gif .webp].freeze
+      BLOCKED_IP_RANGES = [
+        IPAddr.new('127.0.0.0/8'),
+        IPAddr.new('10.0.0.0/8'),
+        IPAddr.new('172.16.0.0/12'),
+        IPAddr.new('192.168.0.0/16'),
+        IPAddr.new('169.254.0.0/16'),
+        IPAddr.new('::1/128')
+      ].freeze
 
       def self.run(params)
         client = Helper::GalaxyStoreClient.new(
@@ -60,17 +71,13 @@ module Fastlane
         write_app_level_text(galaxystore_path, 'youtube_url.txt', entry['youTubeURL'])
 
         if entry['icon']
-          uri = URI(entry['icon'])
-          ext = File.extname(uri.path)
-          ext = '.png' if ext.empty?
-          downloads << { url: entry['icon'], dest: File.join(galaxystore_path, "icon#{ext}") }
+          ext = image_extension(entry['icon'])
+          downloads << { url: entry['icon'], dest: File.join(galaxystore_path, "icon#{ext}") } if ext
         end
 
         if entry['heroImage']
-          uri = URI(entry['heroImage'])
-          ext = File.extname(uri.path)
-          ext = '.png' if ext.empty?
-          downloads << { url: entry['heroImage'], dest: File.join(galaxystore_path, "hero_image#{ext}") }
+          ext = image_extension(entry['heroImage'])
+          downloads << { url: entry['heroImage'], dest: File.join(galaxystore_path, "hero_image#{ext}") } if ext
         end
 
         download_files(downloads)
@@ -102,10 +109,23 @@ module Fastlane
           url = screenshot['screenshotPath']
           next if url.nil?
 
-          ext = File.extname(URI(url).path)
-          ext = '.png' if ext.empty?
+          ext = image_extension(url)
+          next unless ext
+
           downloads << { url:, dest: File.join(screenshots_dir, "#{index + 1}#{ext}") }
         end
+      end
+
+      # Returns the extension to use for the local copy of an API-sourced image URL,
+      # restricted to IMAGE_EXTENSIONS. Defaults to .png when the URL has no extension.
+      # Returns nil (and warns) when the extension is not an allowed image type.
+      def self.image_extension(url)
+        ext = File.extname(URI(url).path).downcase
+        return '.png' if ext.empty?
+        return ext if IMAGE_EXTENSIONS.include?(ext)
+
+        UI.important("  Skipping #{url}: unsupported image extension '#{ext}'")
+        nil
       end
 
       def self.download_files(downloads)
@@ -145,6 +165,7 @@ module Fastlane
 
         response = http.get(uri.request_uri)
         if response.kind_of?(Net::HTTPRedirection)
+          validate_redirect_url!(response['location'])
           download_single(response['location'], dest_path, redirect_limit - 1)
         else
           File.binwrite(dest_path, response.body)
@@ -162,9 +183,33 @@ module Fastlane
 
         response = http.get(uri.request_uri)
         if response.kind_of?(Net::HTTPRedirection)
+          validate_redirect_url!(response['location'])
           download_single(response['location'], dest_path, redirect_limit - 1)
         else
           File.binwrite(dest_path, response.body)
+        end
+      end
+
+      def self.validate_redirect_url!(url)
+        uri = URI(url)
+
+        unless uri.scheme == 'https'
+          UI.user_error!("Redirect blocked: HTTPS required, got #{uri.scheme} (#{url})")
+        end
+
+        begin
+          addresses = Resolv.getaddresses(uri.host)
+        rescue Resolv::ResolvError
+          UI.user_error!("Redirect blocked: cannot resolve #{uri.host} (#{url})")
+        end
+
+        addresses.each do |addr|
+          ip = IPAddr.new(addr)
+          BLOCKED_IP_RANGES.each do |range|
+            if range.include?(ip)
+              UI.user_error!("Redirect blocked: #{uri.host} resolves to private address #{addr} (#{url})")
+            end
+          end
         end
       end
 

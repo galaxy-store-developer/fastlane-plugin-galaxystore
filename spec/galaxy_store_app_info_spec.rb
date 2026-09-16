@@ -268,6 +268,82 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
         expect(downloads.first[:dest]).to end_with('1.png')
       end
     end
+
+    it 'skips screenshots whose URL has a non-image extension' do
+      Dir.mktmpdir do |tmp|
+        lang_dir = File.join(tmp, 'ENG')
+        downloads = []
+        screenshots = [
+          { 'screenshotPath' => 'https://cdn.example.com/shots/1.php' },
+          { 'screenshotPath' => 'https://cdn.example.com/shots/2.png' }
+        ]
+
+        allow(Fastlane::UI).to receive(:important)
+        expect(Fastlane::UI).to receive(:important).with(/unsupported image extension '.php'/)
+
+        action.collect_screenshot_downloads(screenshots, lang_dir, downloads)
+
+        expect(downloads.length).to eq(1)
+        expect(downloads.first[:dest]).to end_with('2.png')
+      end
+    end
+  end
+
+  describe '.image_extension' do
+    it 'returns allowlisted extensions unchanged' do
+      %w[.png .jpg .jpeg .gif .webp].each do |ext|
+        expect(action.image_extension("https://cdn.example.com/img#{ext}")).to eq(ext)
+      end
+    end
+
+    it 'normalizes uppercase extensions to lowercase' do
+      expect(action.image_extension('https://cdn.example.com/IMG.PNG')).to eq('.png')
+    end
+
+    it 'defaults to .png when the URL has no extension' do
+      expect(action.image_extension('https://cdn.example.com/img')).to eq('.png')
+    end
+
+    it 'ignores the query string when determining the extension' do
+      expect(action.image_extension('https://cdn.example.com/icon.png?path=../../../../tmp/malicious.sh')).to eq('.png')
+    end
+
+    it 'returns nil and warns for extensions outside the allowlist' do
+      expect(Fastlane::UI).to receive(:important).with(/unsupported image extension '.sh'/)
+      expect(action.image_extension('https://cdn.example.com/icon.sh')).to be_nil
+    end
+  end
+
+  describe '.write_metadata — icon and hero image extension allowlist' do
+    it 'queues icon and hero image downloads with allowlisted extensions' do
+      Dir.mktmpdir do |tmp|
+        entry = make_entry(lang: 'ENG', icon: 'https://cdn.example.com/icon.jpg')
+        entry['heroImage'] = 'https://cdn.example.com/hero.webp'
+
+        queued = nil
+        allow(action).to receive(:download_files) { |downloads| queued = downloads }
+
+        action.write_metadata([entry], tmp)
+
+        dests = queued.map { |d| File.basename(d[:dest]) }
+        expect(dests).to contain_exactly('icon.jpg', 'hero_image.webp')
+      end
+    end
+
+    it 'skips icon and hero image downloads with non-image extensions' do
+      Dir.mktmpdir do |tmp|
+        entry = make_entry(lang: 'ENG', icon: 'https://cdn.example.com/icon.php')
+        entry['heroImage'] = 'https://cdn.example.com/hero.exe'
+
+        queued = nil
+        allow(action).to receive(:download_files) { |downloads| queued = downloads }
+        allow(Fastlane::UI).to receive(:important)
+
+        action.write_metadata([entry], tmp)
+
+        expect(queued).to be_empty
+      end
+    end
   end
 
   describe '.download_files' do
@@ -305,7 +381,7 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
       end
     end
 
-    it 'follows redirects' do
+    it 'blocks redirects to private IPs' do
       Dir.mktmpdir do |tmp|
         downloads = [
           { url: "http://localhost:#{@port}/redirect", dest: File.join(tmp, 'redirected.png') }
@@ -313,7 +389,7 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
 
         action.download_files(downloads)
 
-        expect(File.binread(File.join(tmp, 'redirected.png'))).to eq('pixel_data_1')
+        expect(File.exist?(File.join(tmp, 'redirected.png'))).to be false
       end
     end
 
@@ -332,6 +408,70 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
 
         expect(File.binread(File.join(tmp, '1.png'))).to eq('pixel_data_1')
       end
+    end
+  end
+
+  describe '.validate_redirect_url!' do
+    it 'rejects HTTP redirect targets' do
+      expect do
+        action.validate_redirect_url!('http://cdn.example.com/image.png')
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /HTTPS required/)
+    end
+
+    it 'rejects redirect to 127.0.0.0/8' do
+      allow(Resolv).to receive(:getaddresses).and_return(['127.0.0.1'])
+      expect do
+        action.validate_redirect_url!('https://evil.example.com/image.png')
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /private address/)
+    end
+
+    it 'rejects redirect to 10.0.0.0/8' do
+      allow(Resolv).to receive(:getaddresses).and_return(['10.1.2.3'])
+      expect do
+        action.validate_redirect_url!('https://evil.example.com/image.png')
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /private address/)
+    end
+
+    it 'rejects redirect to 172.16.0.0/12' do
+      allow(Resolv).to receive(:getaddresses).and_return(['172.16.0.1'])
+      expect do
+        action.validate_redirect_url!('https://evil.example.com/image.png')
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /private address/)
+    end
+
+    it 'rejects redirect to 192.168.0.0/16' do
+      allow(Resolv).to receive(:getaddresses).and_return(['192.168.1.1'])
+      expect do
+        action.validate_redirect_url!('https://evil.example.com/image.png')
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /private address/)
+    end
+
+    it 'rejects redirect to 169.254.0.0/16 (link-local / cloud metadata)' do
+      allow(Resolv).to receive(:getaddresses).and_return(['169.254.169.254'])
+      expect do
+        action.validate_redirect_url!('https://evil.example.com/image.png')
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /private address/)
+    end
+
+    it 'rejects redirect to ::1' do
+      allow(Resolv).to receive(:getaddresses).and_return(['::1'])
+      expect do
+        action.validate_redirect_url!('https://evil.example.com/image.png')
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /private address/)
+    end
+
+    it 'rejects redirect when DNS resolution fails' do
+      allow(Resolv).to receive(:getaddresses).and_raise(Resolv::ResolvError.new('no address'))
+      expect do
+        action.validate_redirect_url!('https://nonexistent.example.com/image.png')
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /cannot resolve/)
+    end
+
+    it 'allows redirect to a public HTTPS URL' do
+      allow(Resolv).to receive(:getaddresses).and_return(['93.184.216.34'])
+      expect do
+        action.validate_redirect_url!('https://cdn.example.com/image.png')
+      end.not_to raise_error
     end
   end
 end
