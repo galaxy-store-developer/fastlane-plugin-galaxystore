@@ -268,6 +268,82 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
         expect(downloads.first[:dest]).to end_with('1.png')
       end
     end
+
+    it 'skips screenshots whose URL has a non-image extension' do
+      Dir.mktmpdir do |tmp|
+        lang_dir = File.join(tmp, 'ENG')
+        downloads = []
+        screenshots = [
+          { 'screenshotPath' => 'https://cdn.example.com/shots/1.php' },
+          { 'screenshotPath' => 'https://cdn.example.com/shots/2.png' }
+        ]
+
+        allow(Fastlane::UI).to receive(:important)
+        expect(Fastlane::UI).to receive(:important).with(/unsupported image extension '.php'/)
+
+        action.collect_screenshot_downloads(screenshots, lang_dir, downloads)
+
+        expect(downloads.length).to eq(1)
+        expect(downloads.first[:dest]).to end_with('2.png')
+      end
+    end
+  end
+
+  describe '.image_extension' do
+    it 'returns allowlisted extensions unchanged' do
+      %w[.png .jpg .jpeg .gif .webp].each do |ext|
+        expect(action.image_extension("https://cdn.example.com/img#{ext}")).to eq(ext)
+      end
+    end
+
+    it 'normalizes uppercase extensions to lowercase' do
+      expect(action.image_extension('https://cdn.example.com/IMG.PNG')).to eq('.png')
+    end
+
+    it 'defaults to .png when the URL has no extension' do
+      expect(action.image_extension('https://cdn.example.com/img')).to eq('.png')
+    end
+
+    it 'ignores the query string when determining the extension' do
+      expect(action.image_extension('https://cdn.example.com/icon.png?path=../../../../tmp/malicious.sh')).to eq('.png')
+    end
+
+    it 'returns nil and warns for extensions outside the allowlist' do
+      expect(Fastlane::UI).to receive(:important).with(/unsupported image extension '.sh'/)
+      expect(action.image_extension('https://cdn.example.com/icon.sh')).to be_nil
+    end
+  end
+
+  describe '.write_metadata — icon and hero image extension allowlist' do
+    it 'queues icon and hero image downloads with allowlisted extensions' do
+      Dir.mktmpdir do |tmp|
+        entry = make_entry(lang: 'ENG', icon: 'https://cdn.example.com/icon.jpg')
+        entry['heroImage'] = 'https://cdn.example.com/hero.webp'
+
+        queued = nil
+        allow(action).to receive(:download_files) { |downloads| queued = downloads }
+
+        action.write_metadata([entry], tmp)
+
+        dests = queued.map { |d| File.basename(d[:dest]) }
+        expect(dests).to contain_exactly('icon.jpg', 'hero_image.webp')
+      end
+    end
+
+    it 'skips icon and hero image downloads with non-image extensions' do
+      Dir.mktmpdir do |tmp|
+        entry = make_entry(lang: 'ENG', icon: 'https://cdn.example.com/icon.php')
+        entry['heroImage'] = 'https://cdn.example.com/hero.exe'
+
+        queued = nil
+        allow(action).to receive(:download_files) { |downloads| queued = downloads }
+        allow(Fastlane::UI).to receive(:important)
+
+        action.write_metadata([entry], tmp)
+
+        expect(queued).to be_empty
+      end
+    end
   end
 
   describe '.download_files' do

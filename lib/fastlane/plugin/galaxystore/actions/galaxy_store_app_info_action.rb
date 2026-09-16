@@ -12,6 +12,7 @@ module Fastlane
   module Actions
     class GalaxyStoreAppInfoAction < Action
       DOWNLOAD_TIMEOUT = 30
+      IMAGE_EXTENSIONS = %w[.png .jpg .jpeg .gif .webp].freeze
       BLOCKED_IP_RANGES = [
         IPAddr.new('127.0.0.0/8'),
         IPAddr.new('10.0.0.0/8'),
@@ -70,17 +71,13 @@ module Fastlane
         write_app_level_text(galaxystore_path, 'youtube_url.txt', entry['youTubeURL'])
 
         if entry['icon']
-          uri = URI(entry['icon'])
-          ext = File.extname(uri.path)
-          ext = '.png' if ext.empty?
-          downloads << { url: entry['icon'], dest: File.join(galaxystore_path, "icon#{ext}") }
+          ext = image_extension(entry['icon'])
+          downloads << { url: entry['icon'], dest: File.join(galaxystore_path, "icon#{ext}") } if ext
         end
 
         if entry['heroImage']
-          uri = URI(entry['heroImage'])
-          ext = File.extname(uri.path)
-          ext = '.png' if ext.empty?
-          downloads << { url: entry['heroImage'], dest: File.join(galaxystore_path, "hero_image#{ext}") }
+          ext = image_extension(entry['heroImage'])
+          downloads << { url: entry['heroImage'], dest: File.join(galaxystore_path, "hero_image#{ext}") } if ext
         end
 
         download_files(downloads)
@@ -112,10 +109,23 @@ module Fastlane
           url = screenshot['screenshotPath']
           next if url.nil?
 
-          ext = File.extname(URI(url).path)
-          ext = '.png' if ext.empty?
+          ext = image_extension(url)
+          next unless ext
+
           downloads << { url:, dest: File.join(screenshots_dir, "#{index + 1}#{ext}") }
         end
+      end
+
+      # Returns the extension to use for the local copy of an API-sourced image URL,
+      # restricted to IMAGE_EXTENSIONS. Defaults to .png when the URL has no extension.
+      # Returns nil (and warns) when the extension is not an allowed image type.
+      def self.image_extension(url)
+        ext = File.extname(URI(url).path).downcase
+        return '.png' if ext.empty?
+        return ext if IMAGE_EXTENSIONS.include?(ext)
+
+        UI.important("  Skipping #{url}: unsupported image extension '#{ext}'")
+        nil
       end
 
       def self.download_files(downloads)
