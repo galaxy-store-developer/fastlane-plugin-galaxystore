@@ -365,4 +365,121 @@ describe Fastlane::Actions::GalaxyStoreUploadMetadataAction do
       end
     end
   end
+
+  describe 'run — upload flow' do
+    let(:client) { instance_double(Fastlane::Helper::GalaxyStoreClient) }
+    let(:params) do
+      { access_token: 'token', service_account_id: 'svc_id', content_id: '000007498732', default_language_code: 'ENG' }
+    end
+
+    before do
+      allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).with('svc_id', 'token').and_return(client)
+    end
+
+    it 'uploads icon and screenshots, then submits the assembled payload' do
+      Dir.mktmpdir do |tmp|
+        build_galaxystore_dir(tmp,
+                              icon: true,
+                              languages: {
+                                'ENG' => {
+                                  title: 'My App',
+                                  short_description: 'A great app for everyone',
+                                  screenshots: ['1.png', '2.png']
+                                },
+                                'FRA' => { title: 'Mon App' }
+                              })
+
+        allow(client).to receive(:upload_file) do |path|
+          { 'fileKey' => "key-#{File.basename(path)}" }
+        end
+        expect(client).to receive(:update_content_metadata) do |payload|
+          expect(payload[:contentId]).to eq('000007498732')
+          expect(payload[:iconKey]).to eq('key-icon.png')
+          expect(payload).not_to have_key(:heroImageKey)
+          expect(payload[:appTitle]).to eq('My App')
+          expect(payload[:screenshots].map { |s| s[:screenshotKey] }).to eq(['key-1.png', 'key-2.png'])
+          expect(payload[:addLanguage]).to eq([{ languagecode: 'FRA', appTitle: 'Mon App' }])
+          { 'result' => 'ok' }
+        end
+
+        result = action.run(params.merge(metadata_path: tmp, upload_hero_image: false))
+
+        expect(result).to eq({ 'result' => 'ok' })
+        expect(client).to have_received(:upload_file).exactly(3).times
+      end
+    end
+
+    it 'uploads the hero image only when upload_hero_image is enabled' do
+      Dir.mktmpdir do |tmp|
+        gs_path = build_galaxystore_dir(tmp, languages: { 'ENG' => { title: 'My App' } })
+        File.write(File.join(gs_path, 'hero_image.png'), 'hero')
+
+        expect(client).to receive(:upload_file).with(end_with('hero_image.png')).and_return({ 'fileKey' => 'hero-key' })
+        expect(client).to receive(:update_content_metadata)
+          .with(hash_including(heroImageKey: 'hero-key'))
+          .and_return({})
+
+        action.run(params.merge(metadata_path: tmp, upload_hero_image: true))
+      end
+    end
+
+    it 'skips the hero image when upload_hero_image is disabled' do
+      Dir.mktmpdir do |tmp|
+        gs_path = build_galaxystore_dir(tmp, languages: { 'ENG' => { title: 'My App' } })
+        File.write(File.join(gs_path, 'hero_image.png'), 'hero')
+
+        expect(client).not_to receive(:upload_file)
+        expect(client).to receive(:update_content_metadata) do |payload|
+          expect(payload).not_to have_key(:heroImageKey)
+          {}
+        end
+
+        action.run(params.merge(metadata_path: tmp, upload_hero_image: false))
+      end
+    end
+
+    it 'prints a per-language diagnosis and re-raises when the API rejects with a 400' do
+      Dir.mktmpdir do |tmp|
+        build_galaxystore_dir(tmp, languages: { 'ENG' => { short_description: 'Valid description text!' } })
+
+        allow(client).to receive(:update_content_metadata) do
+          raise FastlaneCore::Interface::FastlaneError.new,
+                '[POST /seller/contentUpdate] Request failed with status 400: The length of the short description is invalid.'
+        end
+        expect(Fastlane::UI).to receive(:error).with(/Per-language breakdown for short_description/)
+        expect(Fastlane::UI).to receive(:error).with(/ENG: 23 bytes/)
+
+        expect do
+          action.run(params.merge(metadata_path: tmp, upload_hero_image: false))
+        end.to raise_error(FastlaneCore::Interface::FastlaneError, /status 400/)
+      end
+    end
+
+    it 're-raises non-400 API errors without a diagnosis' do
+      Dir.mktmpdir do |tmp|
+        build_galaxystore_dir(tmp, languages: { 'ENG' => { title: 'My App' } })
+
+        allow(client).to receive(:update_content_metadata) do
+          raise FastlaneCore::Interface::FastlaneError.new, '[POST /seller/contentUpdate] Access denied (403).'
+        end
+        expect(Fastlane::UI).not_to receive(:error)
+
+        expect do
+          action.run(params.merge(metadata_path: tmp, upload_hero_image: false))
+        end.to raise_error(FastlaneCore::Interface::FastlaneError, /403/)
+      end
+    end
+  end
+
+  describe '.upload_icon' do
+    it 'returns nil when there is no icon' do
+      expect(action.upload_icon(nil, nil)).to be_nil
+    end
+  end
+
+  describe '.upload_hero_image' do
+    it 'returns nil when there is no hero image' do
+      expect(action.upload_hero_image(nil, nil)).to be_nil
+    end
+  end
 end
