@@ -14,9 +14,4 @@ rollout_countries.json
 coverage
 test-results
 
-## Generated verification reports (regenerate locally via verification-report/build_report.py):
-/verification-report/*.xlsx
-/verification-report/rspec_result.json
 
-## Security review feedback (local-only):
-/security_feedback/
