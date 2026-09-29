@@ -20,6 +20,28 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
     entry
   end
 
+  describe 'run' do
+    it 'fetches app info, writes metadata and JSON, and returns the API response' do
+      Dir.mktmpdir do |tmp|
+        app_info = [make_entry]
+        client = instance_double(Fastlane::Helper::GalaxyStoreClient)
+        allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).with('svc_id', 'token').and_return(client)
+        expect(client).to receive(:get_app_info).with('000007498732').and_return(app_info)
+
+        result = action.run(
+          access_token: 'token',
+          service_account_id: 'svc_id',
+          content_id: '000007498732',
+          metadata_path: tmp
+        )
+
+        expect(result).to eq(app_info)
+        expect(File.read(File.join(tmp, 'galaxystore', 'ENG', 'title.txt'))).to eq('Title ENG')
+        expect(JSON.parse(File.read(File.join(tmp, 'galaxystore', 'app_info.json')))).to eq(app_info)
+      end
+    end
+  end
+
   describe '.write_metadata — directory cleanup' do
     it 'removes stale language directories from a previous call' do
       Dir.mktmpdir do |tmp|
@@ -408,6 +430,99 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
 
         expect(File.binread(File.join(tmp, '1.png'))).to eq('pixel_data_1')
       end
+    end
+
+    it 'reports a connection failure without raising when the host is unreachable' do
+      Dir.mktmpdir do |tmp|
+        # Port 1 (tcpmux) is never listening locally, so the connection is refused immediately.
+        downloads = [{ url: 'http://127.0.0.1:1/image.png', dest: File.join(tmp, 'x.png') }]
+
+        expect(Fastlane::UI).to receive(:important).with(/Connection failed for 127\.0\.0\.1/)
+        expect(Fastlane::UI).to receive(:message).with(/Downloaded 1 file/)
+
+        action.download_files(downloads)
+
+        expect(File.exist?(File.join(tmp, 'x.png'))).to be false
+      end
+    end
+
+    it 'follows a validated redirect on the shared connection' do
+      Dir.mktmpdir do |tmp|
+        allow(action).to receive(:validate_redirect_url!)
+        downloads = [{ url: "http://localhost:#{@port}/redirect", dest: File.join(tmp, 'redirected.png') }]
+
+        action.download_files(downloads)
+
+        expect(File.binread(File.join(tmp, 'redirected.png'))).to eq('pixel_data_1')
+        expect(action).to have_received(:validate_redirect_url!).with("http://localhost:#{@port}/image1.png")
+      end
+    end
+
+    it 'opens a fresh connection when a job targets a different host than the shared connection' do
+      Dir.mktmpdir do |tmp|
+        dest = File.join(tmp, 'other.png')
+        http = instance_double(Net::HTTP, address: 'cdn.example.com')
+
+        expect(action).to receive(:download_single).with("http://localhost:#{@port}/image1.png", dest, 5)
+
+        action.download_with_connection(http, "http://localhost:#{@port}/image1.png", dest)
+      end
+    end
+
+    it 'raises when the redirect limit is exhausted on the shared connection' do
+      http = instance_double(Net::HTTP, address: 'localhost')
+
+      expect do
+        action.download_with_connection(http, 'http://localhost/loop', 'dest.png', 0)
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /Too many redirects/)
+    end
+  end
+
+  describe '.download_single' do
+    before(:all) do
+      @server = WEBrick::HTTPServer.new(Port: 0, Logger: WEBrick::Log.new('/dev/null'), AccessLog: [])
+      @port = @server.config[:Port]
+
+      @server.mount_proc('/icon.png') { |_req, res| res.body = 'icon_data' }
+      @server.mount_proc('/redirect') do |_req, res|
+        res.status = 302
+        res['Location'] = "http://localhost:#{@port}/icon.png"
+      end
+
+      @server_thread = Thread.new { @server.start }
+    end
+
+    after(:all) do
+      @server.shutdown
+      @server_thread.join
+    end
+
+    it 'downloads a file over its own connection' do
+      Dir.mktmpdir do |tmp|
+        dest = File.join(tmp, 'icon.png')
+
+        action.download_single("http://localhost:#{@port}/icon.png", dest)
+
+        expect(File.binread(dest)).to eq('icon_data')
+      end
+    end
+
+    it 'validates and follows a redirect' do
+      Dir.mktmpdir do |tmp|
+        dest = File.join(tmp, 'icon.png')
+        allow(action).to receive(:validate_redirect_url!)
+
+        action.download_single("http://localhost:#{@port}/redirect", dest)
+
+        expect(File.binread(dest)).to eq('icon_data')
+        expect(action).to have_received(:validate_redirect_url!).with("http://localhost:#{@port}/icon.png")
+      end
+    end
+
+    it 'raises when the redirect limit is exhausted' do
+      expect do
+        action.download_single('http://localhost/loop', 'dest.png', 0)
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /Too many redirects/)
     end
   end
 
