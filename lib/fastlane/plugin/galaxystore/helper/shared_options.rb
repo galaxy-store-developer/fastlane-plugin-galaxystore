@@ -31,7 +31,7 @@ module Fastlane
           optional: false,
           type: String,
           verify_block: proc do |value|
-            UI.user_error!("Content ID must be a 12-digit number, got: '#{value}'") unless value.match?(/^\d{12}$/)
+            UI.user_error!("Content ID must be a 12-digit number, got: '#{value}'") unless value.match?(/\A\d{12}\z/)
           end
         )
       end

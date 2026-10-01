@@ -167,8 +167,10 @@ module Fastlane
         if response.kind_of?(Net::HTTPRedirection)
           validate_redirect_url!(response['location'])
           download_single(response['location'], dest_path, redirect_limit - 1)
-        else
+        elsif response.kind_of?(Net::HTTPSuccess)
           File.binwrite(dest_path, response.body)
+        else
+          UI.user_error!("Download failed for #{url}: HTTP #{response.code}")
         end
       end
 
@@ -185,8 +187,10 @@ module Fastlane
         if response.kind_of?(Net::HTTPRedirection)
           validate_redirect_url!(response['location'])
           download_single(response['location'], dest_path, redirect_limit - 1)
-        else
+        elsif response.kind_of?(Net::HTTPSuccess)
           File.binwrite(dest_path, response.body)
+        else
+          UI.user_error!("Download failed for #{url}: HTTP #{response.code}")
         end
       end
 

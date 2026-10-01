@@ -426,9 +426,12 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
           { url: "http://localhost:#{@port}/image1.png", dest: File.join(tmp, '1.png') }
         ]
 
+        expect(Fastlane::UI).to receive(:important).with(/Could not download missing\.png: Download failed .* HTTP 404/)
+
         action.download_files(downloads)
 
         expect(File.binread(File.join(tmp, '1.png'))).to eq('pixel_data_1')
+        expect(File.exist?(File.join(tmp, 'missing.png'))).to be false
       end
     end
 
@@ -504,6 +507,18 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
         action.download_single("http://localhost:#{@port}/icon.png", dest)
 
         expect(File.binread(dest)).to eq('icon_data')
+      end
+    end
+
+    it 'raises and writes nothing when the server returns a non-success status' do
+      Dir.mktmpdir do |tmp|
+        dest = File.join(tmp, 'missing.png')
+
+        expect do
+          action.download_single("http://localhost:#{@port}/nonexistent", dest)
+        end.to raise_error(FastlaneCore::Interface::FastlaneError, /HTTP 404/)
+
+        expect(File.exist?(dest)).to be false
       end
     end
 

@@ -209,6 +209,9 @@ module Fastlane
 
       def poll_long_request(location, method, path, attempts: 30, interval: 10)
         uri = URI(location.start_with?('http') ? location : "#{BASE_URL}#{location}")
+        unless uri.scheme == 'https' && uri.host == URI(BASE_URL).host
+          UI.user_error!("[#{method} #{path}] Refusing to poll async result at unexpected location: #{location}")
+        end
         UI.message("[#{method} #{path}] Request queued for async processing, polling for completion...")
 
         attempts.times do |i|

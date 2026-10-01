@@ -275,6 +275,24 @@ describe Fastlane::Helper::GalaxyStoreClient do
       expect(poll_request.path).to eq('/seller/asyncResult/xyz')
     end
 
+    it 'refuses to poll an absolute Location on a different host' do
+      calls = stub_http(
+        fake_response(303, '', { 'Location' => 'https://attacker.example.com/seller/asyncResult/xyz' }),
+        fake_response(200, '{}')
+      )
+
+      expect { client.submit_app('1') }.to raise_error(
+        FastlaneCore::Interface::FastlaneError, %r{unexpected location: https://attacker\.example\.com}
+      )
+      expect(calls.map(&:first)).to eq(['devapi.samsungapps.com'])
+    end
+
+    it 'refuses to poll a plain-HTTP Location' do
+      stub_http(fake_response(303, '', { 'Location' => 'http://devapi.samsungapps.com/seller/asyncResult/xyz' }))
+
+      expect { client.submit_app('1') }.to raise_error(FastlaneCore::Interface::FastlaneError, /unexpected location/)
+    end
+
     it 'returns nil when the poll completes with 204' do
       stub_http(fake_response(303, '', { 'Location' => '/seller/asyncResult/abc' }), fake_response(204))
       expect(client.submit_app('1')).to be_nil

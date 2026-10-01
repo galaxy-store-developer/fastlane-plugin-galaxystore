@@ -274,6 +274,12 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
       end.to raise_error(FastlaneCore::Interface::FastlaneError, /12-digit/)
     end
 
+    it 'rejects a content_id with extra characters after a newline' do
+      expect do
+        content_id_item.verify_block.call("000001234567\nx")
+      end.to raise_error(FastlaneCore::Interface::FastlaneError, /12-digit/)
+    end
+
     it 'accepts a valid 12-digit content_id' do
       expect do
         content_id_item.verify_block.call('000001234567')
