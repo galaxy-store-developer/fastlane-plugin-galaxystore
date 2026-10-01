@@ -1,0 +1,17 @@
+*.gem
+Gemfile.lock
+.DS_Store
+/CLAUDE.md
+/fastlane/
+app_list.json
+rollout_countries.json
+
+## Documentation cache and generated files:
+/.yardoc/
+/_yardoc/
+/doc/
+/rdoc/
+coverage
+test-results
+
+
