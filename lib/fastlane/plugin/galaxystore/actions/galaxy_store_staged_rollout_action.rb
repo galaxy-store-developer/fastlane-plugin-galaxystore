@@ -65,7 +65,7 @@ module Fastlane
       end
 
       def self.return_value
-        "Returns a hash with 'binaries' (array of binary info) and 'rollout_rate' (rate info hash, or nil if rollout is not enabled)"
+        "Returns a hash with symbol keys :binaries (array of binary info) and :rollout_rate (rate info hash, or nil if rollout is not enabled), or nil when no binaries are registered"
       end
 
       def self.details

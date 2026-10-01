@@ -8,7 +8,7 @@ describe Fastlane::Actions::GalaxyStoreAppListAction do
   let(:base_params) { { access_token: 'token', service_account_id: 'svc_id' } }
   let(:app_list) do
     [
-      { 'contentId' => '000007498732', 'appTitle' => 'App One' },
+      { 'contentId' => '000001234567', 'appTitle' => 'App One' },
       { 'contentId' => '000007654321', 'appTitle' => 'App Two' }
     ]
   end

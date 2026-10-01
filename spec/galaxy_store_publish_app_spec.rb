@@ -3,7 +3,7 @@ require 'fastlane/plugin/galaxystore'
 describe Fastlane::Actions::GalaxyStorePublishAppAction do
   let(:action) { described_class }
   let(:params) do
-    { access_token: 'token', service_account_id: 'svc_id', content_id: '000007498732' }
+    { access_token: 'token', service_account_id: 'svc_id', content_id: '000001234567' }
   end
 
   describe 'run' do
@@ -13,7 +13,7 @@ describe Fastlane::Actions::GalaxyStorePublishAppAction do
         .with('svc_id', 'token')
         .and_return(client)
       expect(client).to receive(:update_content_status)
-        .with('000007498732', 'FOR_SALE')
+        .with('000001234567', 'FOR_SALE')
         .and_return({ 'result' => 'ok' })
 
       result = action.run(params)
@@ -32,7 +32,7 @@ describe Fastlane::Actions::GalaxyStorePublishAppAction do
 
     it 'accepts a valid 12-digit content_id' do
       expect do
-        content_id_item.verify_block.call('000007498732')
+        content_id_item.verify_block.call('000001234567')
       end.not_to raise_error
     end
   end

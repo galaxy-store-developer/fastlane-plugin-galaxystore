@@ -13,7 +13,7 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
   end
 
   let(:base_params) do
-    { access_token: 'token', service_account_id: 'svc_id', content_id: '000007498732', gms: 'N' }
+    { access_token: 'token', service_account_id: 'svc_id', content_id: '000001234567', gms: 'N' }
   end
 
   let(:stub_client) do
@@ -33,7 +33,7 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
         action.run(
           access_token: 'token',
           service_account_id: 'svc_id',
-          content_id: '000007498732',
+          content_id: '000001234567',
           apk_path: '/nonexistent/app.apk'
         )
       end.to raise_error(FastlaneCore::Interface::FastlaneError, /File not found/)
@@ -48,7 +48,7 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
           action.run(
             access_token: 'token',
             service_account_id: 'svc_id',
-            content_id: '000007498732',
+            content_id: '000001234567',
             apk_path: zip_path
           )
         end.to raise_error(FastlaneCore::Interface::FastlaneError, /Unsupported file type/)
@@ -87,9 +87,9 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
           .with('svc_id', 'token')
           .and_return(client)
 
-        expect(client).to receive(:create_update).with('000007498732').ordered
+        expect(client).to receive(:create_update).with('000001234567').ordered
         expect(client).to receive(:upload_file).with(apk_path).ordered.and_return({ 'fileKey' => 'key123' })
-        expect(client).to receive(:add_binary).with('000007498732', 'key123', gms: 'N').ordered
+        expect(client).to receive(:add_binary).with('000001234567', 'key123', gms: 'N').ordered
                                               .and_return({ 'resultCode' => '0000', 'data' => { 'binarySeq' => '7' } })
 
         action.run(base_params.merge(apk_path:))
@@ -153,7 +153,7 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
         allow(client).to receive(:create_update)
         allow(client).to receive(:upload_file).and_return({ 'fileKey' => 'fk' })
 
-        expect(client).to receive(:add_binary).with('000007498732', 'fk', gms: 'Y').and_return({})
+        expect(client).to receive(:add_binary).with('000001234567', 'fk', gms: 'Y').and_return({})
 
         action.run(base_params.merge(apk_path:, gms: 'y'))
       end
@@ -270,13 +270,13 @@ describe Fastlane::Actions::GalaxyStoreUploadApkAction do
 
     it 'rejects a content_id that is 13 digits' do
       expect do
-        content_id_item.verify_block.call('0000074987321')
+        content_id_item.verify_block.call('0000012345678')
       end.to raise_error(FastlaneCore::Interface::FastlaneError, /12-digit/)
     end
 
     it 'accepts a valid 12-digit content_id' do
       expect do
-        content_id_item.verify_block.call('000007498732')
+        content_id_item.verify_block.call('000001234567')
       end.not_to raise_error
     end
   end

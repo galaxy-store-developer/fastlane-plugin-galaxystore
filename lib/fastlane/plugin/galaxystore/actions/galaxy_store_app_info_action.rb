@@ -231,7 +231,7 @@ module Fastlane
       end
 
       def self.return_value
-        "Returns a hash containing the app information from the Galaxy Store API"
+        "Returns an array of listing hashes (the raw contentInfo API response), typically one per contentStatus"
       end
 
       def self.details

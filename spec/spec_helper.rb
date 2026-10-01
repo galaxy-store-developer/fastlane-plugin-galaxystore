@@ -2,7 +2,7 @@ $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 
 require 'simplecov'
 
-# SimpleCov.minimum_coverage 95
+SimpleCov.minimum_coverage(95)
 SimpleCov.start
 
 # This module is only used to check the environment is currently a testing env

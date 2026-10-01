@@ -26,12 +26,12 @@ describe Fastlane::Actions::GalaxyStoreAppInfoAction do
         app_info = [make_entry]
         client = instance_double(Fastlane::Helper::GalaxyStoreClient)
         allow(Fastlane::Helper::GalaxyStoreClient).to receive(:new).with('svc_id', 'token').and_return(client)
-        expect(client).to receive(:get_app_info).with('000007498732').and_return(app_info)
+        expect(client).to receive(:get_app_info).with('000001234567').and_return(app_info)
 
         result = action.run(
           access_token: 'token',
           service_account_id: 'svc_id',
-          content_id: '000007498732',
+          content_id: '000001234567',
           metadata_path: tmp
         )
 

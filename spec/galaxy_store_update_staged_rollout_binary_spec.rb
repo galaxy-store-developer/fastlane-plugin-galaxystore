@@ -3,7 +3,7 @@ require 'fastlane/plugin/galaxystore'
 describe Fastlane::Actions::GalaxyStoreUpdateStagedRolloutBinaryAction do
   let(:action) { described_class }
   let(:base_params) do
-    { access_token: 'token', service_account_id: 'svc_id', content_id: '000007498732', binary_seq: '15' }
+    { access_token: 'token', service_account_id: 'svc_id', content_id: '000001234567', binary_seq: '15' }
   end
 
   def stub_client
@@ -17,7 +17,7 @@ describe Fastlane::Actions::GalaxyStoreUpdateStagedRolloutBinaryAction do
     it 'calls update_staged_rollout_binary with function=ADD' do
       client = stub_client
       expect(client).to receive(:update_staged_rollout_binary)
-        .with('000007498732', 'ADD', '15')
+        .with('000001234567', 'ADD', '15')
         .and_return({ 'result' => 'ok' })
 
       action.run(base_params.merge(function: 'ADD'))
@@ -26,7 +26,7 @@ describe Fastlane::Actions::GalaxyStoreUpdateStagedRolloutBinaryAction do
     it 'calls update_staged_rollout_binary with function=REMOVE' do
       client = stub_client
       expect(client).to receive(:update_staged_rollout_binary)
-        .with('000007498732', 'REMOVE', '15')
+        .with('000001234567', 'REMOVE', '15')
         .and_return({ 'result' => 'ok' })
 
       action.run(base_params.merge(function: 'REMOVE'))
@@ -35,7 +35,7 @@ describe Fastlane::Actions::GalaxyStoreUpdateStagedRolloutBinaryAction do
     it 'upcases a lowercase function value before passing it through' do
       client = stub_client
       expect(client).to receive(:update_staged_rollout_binary)
-        .with('000007498732', 'ADD', '15')
+        .with('000001234567', 'ADD', '15')
         .and_return({ 'result' => 'ok' })
 
       action.run(base_params.merge(function: 'add'))
@@ -53,7 +53,7 @@ describe Fastlane::Actions::GalaxyStoreUpdateStagedRolloutBinaryAction do
     it 'uses GALAXY_STORE_BINARY_SEQ from lane context when binary_seq is omitted' do
       Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::GALAXY_STORE_BINARY_SEQ] = '99'
       client = stub_client
-      expect(client).to receive(:update_staged_rollout_binary).with('000007498732', 'ADD', '99')
+      expect(client).to receive(:update_staged_rollout_binary).with('000001234567', 'ADD', '99')
 
       action.run(base_params.except(:binary_seq).merge(function: 'ADD'))
     end
@@ -61,7 +61,7 @@ describe Fastlane::Actions::GalaxyStoreUpdateStagedRolloutBinaryAction do
     it 'prefers an explicit binary_seq over the lane context value' do
       Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::GALAXY_STORE_BINARY_SEQ] = '99'
       client = stub_client
-      expect(client).to receive(:update_staged_rollout_binary).with('000007498732', 'ADD', '15')
+      expect(client).to receive(:update_staged_rollout_binary).with('000001234567', 'ADD', '15')
 
       action.run(base_params.merge(function: 'ADD'))
     end

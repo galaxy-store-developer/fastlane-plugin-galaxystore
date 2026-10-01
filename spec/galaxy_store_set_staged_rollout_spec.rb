@@ -8,7 +8,7 @@ describe Fastlane::Actions::GalaxyStoreSetStagedRolloutAction do
     {
       access_token: 'token',
       service_account_id: 'svc_id',
-      content_id: '000007498732',
+      content_id: '000001234567',
       app_status: 'SALE'
     }
   end
@@ -31,7 +31,7 @@ describe Fastlane::Actions::GalaxyStoreSetStagedRolloutAction do
     it 'sends function=ENABLE_ROLLOUT with the rollout rate and no countries' do
       client = stub_client
       expect(client).to receive(:set_staged_rollout_rate)
-        .with('000007498732', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries: nil)
+        .with('000001234567', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries: nil)
         .and_return({ 'result' => 'ok' })
 
       action.run(base_params.merge(action: 'ENABLE', rollout_rate: 25))
@@ -41,7 +41,7 @@ describe Fastlane::Actions::GalaxyStoreSetStagedRolloutAction do
       client = stub_client
       countries = [{ countryCode: 'USA', rolloutRate: 40 }]
       expect(client).to receive(:set_staged_rollout_rate)
-        .with('000007498732', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries:)
+        .with('000001234567', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries:)
         .and_return({ 'result' => 'ok' })
 
       action.run(base_params.merge(action: 'ENABLE', rollout_rate: 25, countries:))
@@ -55,7 +55,7 @@ describe Fastlane::Actions::GalaxyStoreSetStagedRolloutAction do
 
         client = stub_client
         expect(client).to receive(:set_staged_rollout_rate)
-          .with('000007498732', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries: countries_from_file)
+          .with('000001234567', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries: countries_from_file)
           .and_return({ 'result' => 'ok' })
 
         action.run(base_params.merge(action: 'ENABLE', rollout_rate: 25, countries_json_path: path))
@@ -70,7 +70,7 @@ describe Fastlane::Actions::GalaxyStoreSetStagedRolloutAction do
 
         client = stub_client
         expect(client).to receive(:set_staged_rollout_rate)
-          .with('000007498732', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries: countries_from_file)
+          .with('000001234567', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries: countries_from_file)
           .and_return({ 'result' => 'ok' })
 
         action.run(base_params.merge(
@@ -98,7 +98,7 @@ describe Fastlane::Actions::GalaxyStoreSetStagedRolloutAction do
     it 'sends function=DISABLE_ROLLOUT with no rate or countries' do
       client = stub_client
       expect(client).to receive(:set_staged_rollout_rate)
-        .with('000007498732', 'DISABLE_ROLLOUT', 'SALE', rollout_rate: nil, countries: nil)
+        .with('000001234567', 'DISABLE_ROLLOUT', 'SALE', rollout_rate: nil, countries: nil)
         .and_return({ 'result' => 'ok' })
 
       action.run(base_params.merge(action: 'DISABLE'))
@@ -114,7 +114,7 @@ describe Fastlane::Actions::GalaxyStoreSetStagedRolloutAction do
     it 'upcases a lowercase action before resolving the function' do
       client = stub_client
       expect(client).to receive(:set_staged_rollout_rate)
-        .with('000007498732', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries: nil)
+        .with('000001234567', 'ENABLE_ROLLOUT', 'SALE', rollout_rate: 25, countries: nil)
 
       action.run(base_params.merge(action: 'enable', rollout_rate: 25))
     end
@@ -122,7 +122,7 @@ describe Fastlane::Actions::GalaxyStoreSetStagedRolloutAction do
     it 'upcases a lowercase app_status' do
       client = stub_client
       expect(client).to receive(:set_staged_rollout_rate)
-        .with('000007498732', 'DISABLE_ROLLOUT', 'REGISTRATION', rollout_rate: nil, countries: nil)
+        .with('000001234567', 'DISABLE_ROLLOUT', 'REGISTRATION', rollout_rate: nil, countries: nil)
 
       action.run(base_params.merge(action: 'DISABLE', app_status: 'registration'))
     end

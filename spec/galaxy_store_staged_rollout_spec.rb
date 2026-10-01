@@ -3,7 +3,7 @@ require 'fastlane/plugin/galaxystore'
 describe Fastlane::Actions::GalaxyStoreStagedRolloutAction do
   let(:action) { described_class }
   let(:base_params) do
-    { access_token: 'token', service_account_id: 'svc_id', content_id: '000007498732', app_status: 'SALE' }
+    { access_token: 'token', service_account_id: 'svc_id', content_id: '000001234567', app_status: 'SALE' }
   end
 
   def stub_client(binaries_response:, rate_response: nil)
@@ -70,7 +70,7 @@ describe Fastlane::Actions::GalaxyStoreStagedRolloutAction do
     it 'upcases a lowercase app_status before passing it to the client' do
       client = stub_client(binaries_response: { 'data' => { 'binaries' => [] } })
       expect(client).to receive(:get_staged_rollout_binaries)
-        .with('000007498732', 'SALE')
+        .with('000001234567', 'SALE')
 
       action.run(base_params.merge(app_status: 'sale'))
     end

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-05-14
+## [1.0.0] - 2026-10-01
 
 ### Added
 
@@ -22,4 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `galaxy_store_update_staged_rollout_binary` — adds or removes a binary from the staged rollout group by `binarySeq`. The `binary_seq` parameter is optional; when omitted it falls back to `SharedValues::GALAXY_STORE_BINARY_SEQ` set by `galaxy_store_upload_apk`.
 - Async response handling — the API client transparently polls `303 See Other` responses to completion, surfacing only the final result to callers.
 - Structured error reporting — when the Galaxy Store API returns a non-success response, the client parses `errorCode` and `errorMsg` from the response body and surfaces them in the raised error rather than dumping the raw JSON.
+- `galaxy_store_app_info` also writes the raw API response to `fastlane/metadata/galaxystore/app_info.json` for inspection and scripting.
+- Download hardening in `galaxy_store_app_info` — redirects must use HTTPS and must not resolve to loopback, private, or link-local addresses; only files with an allowlisted image extension (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`) are downloaded.
+- Every API request carries an `X-Client-Source` header identifying the plugin, plus verbose request/response logging when fastlane runs with `--verbose`.
 - Authentication via the `GALAXY_STORE_ACCESS_TOKEN` and `GALAXY_STORE_SERVICE_ACCOUNT_ID` environment variables; per-action overrides supported.

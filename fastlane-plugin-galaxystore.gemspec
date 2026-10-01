@@ -19,6 +19,9 @@ Gem::Specification.new do |spec|
   spec.files         = Dir["lib/**/*"] + %w(README.md CHANGELOG.md LICENSE)
   spec.require_paths = ['lib']
   spec.metadata['rubygems_mfa_required'] = 'true'
+  spec.metadata['source_code_uri'] = 'https://github.com/galaxy-store-developer/fastlane-plugin-galaxystore'
+  spec.metadata['changelog_uri'] = 'https://github.com/galaxy-store-developer/fastlane-plugin-galaxystore/blob/main/CHANGELOG.md'
+  spec.metadata['bug_tracker_uri'] = 'https://github.com/galaxy-store-developer/fastlane-plugin-galaxystore/issues'
   spec.required_ruby_version = '>= 3.1'
 
   # Don't add a dependency to fastlane or fastlane_re

@@ -109,7 +109,7 @@ galaxy_store_import_from_supply(
 
 Retrieves detailed information for a specific app and writes the metadata to local files in `fastlane/metadata/galaxystore/`. Prefers any in-progress listing (any `contentStatus` other than `FOR_SALE`) if one exists, otherwise falls back to the `FOR_SALE` listing. See [App status lifecycle](#app-status-lifecycle) for the statuses you'll typically see.
 
-> **Warning:** Running this action can overwrite the metadata that's stored your local metadata directory if you have made local edits or have imported Play Store metadata from Supply.  
+> **Warning:** This action deletes and recreates the entire `fastlane/metadata/galaxystore/` directory, including `hero_image`, `youtube_url.txt`, any local edits, and anything imported from Supply by `galaxy_store_import_from_supply`.
 
 The following files are written for each supported language:
 
@@ -118,6 +118,7 @@ fastlane/metadata/galaxystore/
   icon.png
   hero_image.png       # only when the listing has one (Game-category apps)
   youtube_url.txt      # only when the listing has a YouTube URL set
+  app_info.json        # raw contentInfo API response
   ENG/
     title.txt
     short_description.txt
@@ -145,7 +146,7 @@ galaxy_store_app_info(
 | `content_id` | 12-digit app content ID | Yes | |
 | `metadata_path` | Path to write metadata files | No | `fastlane/metadata` |
 
-**Returns:** A hash containing the full app info API response.
+**Returns:** An array of listing hashes (the raw `contentInfo` API response), typically one per `contentStatus`.
 
 ---
 
@@ -228,7 +229,7 @@ galaxy_store_upload_apk(
 | `access_token` | Galaxy Store API access token | Yes |
 | `service_account_id` | Galaxy Store service account ID | Yes |
 | `content_id` | 12-digit app content ID | Yes |
-| `apk_path` | Path to the `.apk` or `.aab` file to upload. If not provided will check the existing lane for Grade Output Paths  | No |
+| `apk_path` | Path to the `.apk` or `.aab` file to upload. If not provided falls back to the Gradle output paths in lane context (AAB preferred over APK) | No |
 | `gms` | `Y` if your build includes the Google Play Services SDK, `N` otherwise. Rarely changes between releases for a given app — hardcode it in your Fastfile | Yes |
 
 **Returns:** The `binarySeq` (string) of the newly added binary, or `nil` if the API did not include one.
@@ -449,7 +450,7 @@ galaxy_store_staged_rollout(
 | `content_id` | 12-digit app content ID | Yes |
 | `app_status` | `SALE` (live binaries) or `REGISTRATION` (pending binaries) | Yes |
 
-**Returns:** A hash with `binaries` (array of binary info) and `rollout_rate` (rate data, or `nil` if rollout is not enabled).
+**Returns:** A hash with symbol keys `:binaries` (array of binary info) and `:rollout_rate` (rate data, or `nil` if rollout is not enabled). Returns `nil` when no binaries are registered for the given `app_status`.
 
 ---
 
@@ -572,7 +573,7 @@ end
 
 ## Issues and Feedback
 
-For any issues or feedback, please submit them to this repository.
+For any issues or feedback, please open an issue at [github.com/galaxy-store-developer/fastlane-plugin-galaxystore/issues](https://github.com/galaxy-store-developer/fastlane-plugin-galaxystore/issues).
 
 ## Troubleshooting
 

@@ -59,10 +59,10 @@ describe Fastlane::Helper::GalaxyStoreClient do
     it 'issues GET /seller/contentInfo with contentId as a query parameter' do
       calls = stub_http(fake_response(200, '[]'))
 
-      client.get_app_info('000007498732')
+      client.get_app_info('000001234567')
 
       _host, request = calls.first
-      expect(request.path).to eq('/seller/contentInfo?contentId=000007498732')
+      expect(request.path).to eq('/seller/contentInfo?contentId=000001234567')
     end
   end
 
@@ -121,22 +121,22 @@ describe Fastlane::Helper::GalaxyStoreClient do
 
     it '#submit_app posts the contentId to /seller/contentSubmit' do
       calls = stub_http(fake_response(200, '{}'))
-      client.submit_app('000007498732')
-      expect(last_json_post(calls)).to eq(['/seller/contentSubmit', { 'contentId' => '000007498732' }])
+      client.submit_app('000001234567')
+      expect(last_json_post(calls)).to eq(['/seller/contentSubmit', { 'contentId' => '000001234567' }])
     end
 
     it '#update_content_status posts contentId and contentStatus' do
       calls = stub_http(fake_response(200, '{}'))
-      client.update_content_status('000007498732', 'FOR_SALE')
+      client.update_content_status('000001234567', 'FOR_SALE')
       expect(last_json_post(calls)).to eq(
-        ['/seller/contentStatusUpdate', { 'contentId' => '000007498732', 'contentStatus' => 'FOR_SALE' }]
+        ['/seller/contentStatusUpdate', { 'contentId' => '000001234567', 'contentStatus' => 'FOR_SALE' }]
       )
     end
 
     it '#create_update posts the contentId to /seller/contentUpdate' do
       calls = stub_http(fake_response(200, '{}'))
-      client.create_update('000007498732')
-      expect(last_json_post(calls)).to eq(['/seller/contentUpdate', { 'contentId' => '000007498732' }])
+      client.create_update('000001234567')
+      expect(last_json_post(calls)).to eq(['/seller/contentUpdate', { 'contentId' => '000001234567' }])
     end
 
     it '#update_content_metadata posts the payload as-is to /seller/contentUpdate' do
@@ -147,9 +147,9 @@ describe Fastlane::Helper::GalaxyStoreClient do
 
     it '#add_binary posts contentId, gms, and filekey to /seller/v2/content/binary' do
       calls = stub_http(fake_response(200, '{}'))
-      client.add_binary('000007498732', 'key-1', gms: 'Y')
+      client.add_binary('000001234567', 'key-1', gms: 'Y')
       expect(last_json_post(calls)).to eq(
-        ['/seller/v2/content/binary', { 'contentId' => '000007498732', 'gms' => 'Y', 'filekey' => 'key-1' }]
+        ['/seller/v2/content/binary', { 'contentId' => '000001234567', 'gms' => 'Y', 'filekey' => 'key-1' }]
       )
     end
   end
@@ -164,26 +164,26 @@ describe Fastlane::Helper::GalaxyStoreClient do
 
     it '#update_staged_rollout_binary PUTs contentId, function, and binarySeq as a string' do
       calls = stub_http(fake_response(200, '{}'))
-      client.update_staged_rollout_binary('000007498732', 'ADD', 42)
+      client.update_staged_rollout_binary('000001234567', 'ADD', 42)
       expect(last_json_put(calls)).to eq(
         ['/seller/v2/content/stagedRolloutBinary',
-         { 'contentId' => '000007498732', 'function' => 'ADD', 'binarySeq' => '42' }]
+         { 'contentId' => '000001234567', 'function' => 'ADD', 'binarySeq' => '42' }]
       )
     end
 
     it '#set_staged_rollout_rate omits rolloutRate and countries when not given' do
       calls = stub_http(fake_response(200, '{}'))
-      client.set_staged_rollout_rate('000007498732', 'DISABLE', 'FOR_SALE')
+      client.set_staged_rollout_rate('000001234567', 'DISABLE', 'FOR_SALE')
       expect(last_json_put(calls)).to eq(
         ['/seller/v2/content/stagedRolloutRate',
-         { 'contentId' => '000007498732', 'function' => 'DISABLE', 'appStatus' => 'FOR_SALE' }]
+         { 'contentId' => '000001234567', 'function' => 'DISABLE', 'appStatus' => 'FOR_SALE' }]
       )
     end
 
     it '#set_staged_rollout_rate includes rolloutRate and countries when given' do
       calls = stub_http(fake_response(200, '{}'))
       countries = [{ code: 'USA', rolloutRate: 10 }]
-      client.set_staged_rollout_rate('000007498732', 'ENABLE', 'FOR_SALE', rollout_rate: 25, countries:)
+      client.set_staged_rollout_rate('000001234567', 'ENABLE', 'FOR_SALE', rollout_rate: 25, countries:)
       _path, body = last_json_put(calls)
       expect(body['rolloutRate']).to eq(25)
       expect(body['countries']).to eq([{ 'code' => 'USA', 'rolloutRate' => 10 }])
@@ -191,25 +191,25 @@ describe Fastlane::Helper::GalaxyStoreClient do
 
     it '#set_staged_rollout_rate omits countries when the list is empty' do
       calls = stub_http(fake_response(200, '{}'))
-      client.set_staged_rollout_rate('000007498732', 'ENABLE', 'FOR_SALE', rollout_rate: 25, countries: [])
+      client.set_staged_rollout_rate('000001234567', 'ENABLE', 'FOR_SALE', rollout_rate: 25, countries: [])
       _path, body = last_json_put(calls)
       expect(body).not_to have_key('countries')
     end
 
     it '#get_staged_rollout_binaries GETs with contentId and appStatus query params' do
       calls = stub_http(fake_response(200, '{}'))
-      client.get_staged_rollout_binaries('000007498732', 'FOR_SALE')
+      client.get_staged_rollout_binaries('000001234567', 'FOR_SALE')
       _host, request = calls.last
       expect(request.method).to eq('GET')
-      expect(request.path).to eq('/seller/v2/content/stagedRolloutBinary?contentId=000007498732&appStatus=FOR_SALE')
+      expect(request.path).to eq('/seller/v2/content/stagedRolloutBinary?contentId=000001234567&appStatus=FOR_SALE')
     end
 
     it '#get_staged_rollout_rate GETs with contentId and appStatus query params' do
       calls = stub_http(fake_response(200, '{}'))
-      client.get_staged_rollout_rate('000007498732', 'FOR_SALE')
+      client.get_staged_rollout_rate('000001234567', 'FOR_SALE')
       _host, request = calls.last
       expect(request.method).to eq('GET')
-      expect(request.path).to eq('/seller/v2/content/stagedRolloutRate?contentId=000007498732&appStatus=FOR_SALE')
+      expect(request.path).to eq('/seller/v2/content/stagedRolloutRate?contentId=000001234567&appStatus=FOR_SALE')
     end
   end
 

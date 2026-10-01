@@ -3,7 +3,7 @@ require 'fastlane/plugin/galaxystore'
 describe Fastlane::Actions::GalaxyStoreSetPublicationTypeAction do
   let(:action) { described_class }
   let(:base_params) do
-    { access_token: 'token', service_account_id: 'svc_id', content_id: '000007498732' }
+    { access_token: 'token', service_account_id: 'svc_id', content_id: '000001234567' }
   end
   let(:stub_client) do
     instance_double(Fastlane::Helper::GalaxyStoreClient).tap do |client|
@@ -17,7 +17,7 @@ describe Fastlane::Actions::GalaxyStoreSetPublicationTypeAction do
       it 'sends publicationType 01' do
         stub_client
         expect(Fastlane::Helper::GalaxyStoreClient.new('', '')).to receive(:update_content_metadata)
-          .with({ contentId: '000007498732', publicationType: '01' })
+          .with({ contentId: '000001234567', publicationType: '01' })
           .and_return({})
 
         action.run(base_params.merge(publication_type: '01'))
@@ -28,7 +28,7 @@ describe Fastlane::Actions::GalaxyStoreSetPublicationTypeAction do
       it 'sends publicationType and startPublicationDate' do
         stub_client
         expect(Fastlane::Helper::GalaxyStoreClient.new('', '')).to receive(:update_content_metadata)
-          .with({ contentId: '000007498732', publicationType: '02', startPublicationDate: '2026-06-01 09:00:00' })
+          .with({ contentId: '000001234567', publicationType: '02', startPublicationDate: '2026-06-01 09:00:00' })
           .and_return({})
 
         action.run(base_params.merge(
@@ -48,7 +48,7 @@ describe Fastlane::Actions::GalaxyStoreSetPublicationTypeAction do
       it 'sends publicationType 03 without a date' do
         stub_client
         expect(Fastlane::Helper::GalaxyStoreClient.new('', '')).to receive(:update_content_metadata)
-          .with({ contentId: '000007498732', publicationType: '03' })
+          .with({ contentId: '000001234567', publicationType: '03' })
           .and_return({})
 
         action.run(base_params.merge(publication_type: '03'))

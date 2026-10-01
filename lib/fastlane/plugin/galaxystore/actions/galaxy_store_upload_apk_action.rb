@@ -49,7 +49,7 @@ module Fastlane
       end
 
       def self.description
-        "Uploads an APK file to the Samsung Galaxy Store"
+        "Uploads an APK or AAB file to the Samsung Galaxy Store"
       end
 
       def self.authors
