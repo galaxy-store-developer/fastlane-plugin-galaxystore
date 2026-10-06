@@ -45,7 +45,7 @@ Then run `bundle install`.
 
 ### Authentication
 
-The plugin requires two credentials for all API calls. Set them as environment variables and the plugin will read them automatically — you don't need to pass `access_token` or `service_account_id` to individual actions:
+The plugin requires two credentials for all API calls. Set them as environment variables and the plugin will read them automatically, you don't need to pass `access_token` or `service_account_id` to individual actions:
 
 ```bash
 export GALAXY_STORE_ACCESS_TOKEN="your-access-token"
